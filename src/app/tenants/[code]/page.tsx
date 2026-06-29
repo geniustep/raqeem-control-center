@@ -22,6 +22,9 @@ import {
 } from "@/lib/tenant-status";
 import { t } from "@/lib/i18n";
 
+/** Odoo loader uses noStore() — this segment must stay dynamic at runtime. */
+export const dynamic = "force-dynamic";
+
 export function generateStaticParams() {
   return getStaticTenantCodes().map((code) => ({ code }));
 }
