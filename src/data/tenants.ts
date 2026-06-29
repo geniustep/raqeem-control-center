@@ -282,10 +282,8 @@ const alwah: Tenant = {
     school_data_ready: "pending",
     live: "warning",
   }),
-  warnings: [
-    "School profile / branding data not completed",
-    "Frontend opens but tenant branding still fallback",
-  ],
+  // Warnings are derived at runtime in getTenantWarnings() (Arabic, branding-only).
+  warnings: [],
   operationRuns: alwahRuns,
 };
 

@@ -41,7 +41,7 @@ export function getAllDomains(list: Tenant[] = allTenants): TenantDomain[] {
       domain: tn.frontendDomain,
       tenantCode: tn.code,
       type: "frontend",
-      target: "frontend origin (configured outside control center)",
+      target: "أصل الواجهة (مُكوَّن خارج مركز التحكّم)",
       dnsStatus: "passed",
       sslStatus: "passed",
       proxyStatus: "passed",

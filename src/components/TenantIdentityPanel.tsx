@@ -26,7 +26,7 @@ export function TenantIdentityPanel({ tenant }: { tenant: Tenant }) {
           <KeyValue label={L.branding}>
             <div className="flex flex-wrap items-center gap-2">
               <Pill tone={brandingConfigured ? "green" : "amber"}>
-                {brandingConfigured ? "Configured" : "Missing"}
+                {brandingConfigured ? "مُكوَّن" : "غير مكتمل"}
               </Pill>
               <a
                 href={id.brandingUrl}
