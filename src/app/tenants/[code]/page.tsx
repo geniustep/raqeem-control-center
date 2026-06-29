@@ -12,7 +12,8 @@ import { TenantDomainsPanel } from "@/components/TenantDomainsPanel";
 import { TenantHealthPanel } from "@/components/TenantHealthPanel";
 import { TenantOperationsPanel } from "@/components/TenantOperationsPanel";
 import { AuditTimeline } from "@/components/AuditTimeline";
-import { getAllTenantCodes, getTenantByCode } from "@/data/tenants";
+import { DataSourceBanner } from "@/components/DataSourceBanner";
+import { loadTenant, getStaticTenantCodes } from "@/lib/data-source/platform-data-source";
 import { getAuditLog } from "@/lib/selectors";
 import {
   deriveTenantOverallStatus,
@@ -22,7 +23,7 @@ import {
 import { t } from "@/lib/i18n";
 
 export function generateStaticParams() {
-  return getAllTenantCodes().map((code) => ({ code }));
+  return getStaticTenantCodes().map((code) => ({ code }));
 }
 
 export default async function TenantDetailPage({
@@ -31,7 +32,7 @@ export default async function TenantDetailPage({
   params: Promise<{ code: string }>;
 }) {
   const { code } = await params;
-  const tenant = getTenantByCode(code);
+  const { data: tenant, meta } = await loadTenant(code);
   if (!tenant) notFound();
 
   const status = deriveTenantOverallStatus(tenant);
@@ -44,7 +45,8 @@ export default async function TenantDetailPage({
 
   return (
     <div>
-      {/* Header */}
+      <DataSourceBanner meta={meta} />
+
       <div className="mb-6 border-b border-slate-200 pb-5">
         <div className="mb-1 text-xs text-slate-500">
           <Link href="/tenants" className="hover:underline">
@@ -94,7 +96,6 @@ export default async function TenantDetailPage({
         </div>
       ) : null}
 
-      {/* Main grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-1">
           <Card>
@@ -118,7 +119,6 @@ export default async function TenantDetailPage({
         </div>
       </div>
 
-      {/* Audit */}
       <div className="mt-6">
         <Card>
           <CardHeader title={t.tenantDetail.sections.audit} />

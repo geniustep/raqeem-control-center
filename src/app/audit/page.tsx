@@ -3,18 +3,20 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card, CardBody } from "@/components/Card";
 import { HealthBadge, RiskBadge } from "@/components/HealthBadge";
 import { EmptyState } from "@/components/EmptyState";
-import { getAuditLog } from "@/lib/selectors";
+import { DataSourceBanner } from "@/components/DataSourceBanner";
+import { loadAuditLogs } from "@/lib/data-source/platform-data-source";
 import { formatDateTime } from "@/lib/format";
 import { t } from "@/lib/i18n";
 
 const TH = "px-3 py-2.5 text-right text-xs font-semibold text-slate-500 whitespace-nowrap";
 const TD = "px-3 py-3 text-sm text-slate-700 align-top";
 
-export default function AuditPage() {
-  const entries = getAuditLog();
+export default async function AuditPage() {
+  const { data: entries, meta } = await loadAuditLogs();
 
   return (
     <div>
+      <DataSourceBanner meta={meta} />
       <PageHeader title={t.audit.title} subtitle={t.audit.subtitle} />
 
       {entries.length === 0 ? (

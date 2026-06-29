@@ -3,10 +3,10 @@ import type { CheckStatus, TenantDomain } from "@/types";
 import { PageHeader } from "@/components/PageHeader";
 import { HealthBadge } from "@/components/HealthBadge";
 import { Pill } from "@/components/Pill";
-import { getAllDomains } from "@/lib/selectors";
+import { DataSourceBanner } from "@/components/DataSourceBanner";
+import { loadDomains } from "@/lib/data-source/platform-data-source";
 import { t } from "@/lib/i18n";
 
-/** Combine the per-axis statuses into a single domain status. */
 function domainStatus(d: TenantDomain): CheckStatus {
   const axes = [d.dnsStatus, d.sslStatus, d.proxyStatus, d.lastSmoke];
   if (axes.includes("failed")) return "failed";
@@ -18,11 +18,12 @@ function domainStatus(d: TenantDomain): CheckStatus {
 const TH = "px-3 py-2.5 text-right text-xs font-semibold text-slate-500 whitespace-nowrap";
 const TD = "px-3 py-3 text-sm text-slate-700 whitespace-nowrap";
 
-export default function DomainsPage() {
-  const domains = getAllDomains();
+export default async function DomainsPage() {
+  const { data: domains, meta } = await loadDomains();
 
   return (
     <div>
+      <DataSourceBanner meta={meta} />
       <PageHeader
         title={t.nav.domains}
         subtitle="كل النطاقات (API والواجهة) عبر المدارس وحالتها"

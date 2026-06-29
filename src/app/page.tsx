@@ -5,20 +5,19 @@ import { TenantStatusCard } from "@/components/TenantStatusCard";
 import { Card, CardBody, CardHeader } from "@/components/Card";
 import { HealthBadge } from "@/components/HealthBadge";
 import { EmptyState } from "@/components/EmptyState";
-import { tenants } from "@/data/tenants";
-import { getPlatformSummary, getTenantsNeedingAttention } from "@/lib/tenant-status";
-import { getRecentOperationRuns } from "@/lib/selectors";
+import { DataSourceBanner } from "@/components/DataSourceBanner";
+import { loadDashboardData } from "@/lib/data-source/platform-data-source";
 import { formatDateTime } from "@/lib/format";
 import { t } from "@/lib/i18n";
 
-export default function DashboardPage() {
-  const summary = getPlatformSummary(tenants);
-  const needsAttention = getTenantsNeedingAttention(tenants);
-  const recent = getRecentOperationRuns(6);
+export default async function DashboardPage() {
+  const { data, meta } = await loadDashboardData();
+  const { summary, needsAttention, recentRuns: recent } = data;
   const M = t.dashboard.metrics;
 
   return (
     <div>
+      <DataSourceBanner meta={meta} />
       <PageHeader title={t.dashboard.title} subtitle={t.dashboard.subtitle} />
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -33,7 +32,6 @@ export default function DashboardPage() {
       </section>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-5">
-        {/* Needs attention */}
         <section className="lg:col-span-3">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-900">
@@ -54,7 +52,6 @@ export default function DashboardPage() {
           )}
         </section>
 
-        {/* Recent operations */}
         <section className="lg:col-span-2">
           <Card>
             <CardHeader

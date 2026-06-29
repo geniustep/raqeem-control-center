@@ -4,20 +4,21 @@ import { Card, CardBody, CardHeader } from "@/components/Card";
 import { HealthBadge, RiskBadge } from "@/components/HealthBadge";
 import { Pill } from "@/components/Pill";
 import { WarningCallout } from "@/components/WarningCallout";
-import { listOperations } from "@/lib/operation-catalog";
-import { getAllOperationRuns } from "@/lib/selectors";
+import { DataSourceBanner } from "@/components/DataSourceBanner";
+import { loadOperationsPageData } from "@/lib/data-source/platform-data-source";
 import { formatDateTime } from "@/lib/format";
 import { t } from "@/lib/i18n";
 
 const TH = "px-3 py-2.5 text-right text-xs font-semibold text-slate-500 whitespace-nowrap";
 const TD = "px-3 py-3 text-sm text-slate-700";
 
-export default function OperationsPage() {
-  const catalog = listOperations();
-  const runs = getAllOperationRuns();
+export default async function OperationsPage() {
+  const { data, meta } = await loadOperationsPageData();
+  const { catalog, runs } = data;
 
   return (
     <div>
+      <DataSourceBanner meta={meta} />
       <PageHeader title={t.operations.title} subtitle={t.operations.subtitle} />
 
       <div className="mb-6">
@@ -26,7 +27,6 @@ export default function OperationsPage() {
         </WarningCallout>
       </div>
 
-      {/* Catalog */}
       <section className="mb-8">
         <h2 className="mb-3 text-sm font-semibold text-slate-900">{t.operations.catalog}</h2>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -55,7 +55,6 @@ export default function OperationsPage() {
         </div>
       </section>
 
-      {/* Run history */}
       <section>
         <Card>
           <CardHeader title={t.operations.runs} />
