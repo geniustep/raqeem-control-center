@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { buildSimulatedDryRunClientPayload } from "@/lib/audit/simulated-dry-run-payload";
 import type { DryRunReport } from "@/lib/operations-dry-run";
 import { buildDryRunReport } from "@/lib/operations-dry-run";
 import type { OperationStatus, Tenant, TenantOperation } from "@/types";
@@ -95,6 +96,9 @@ export function OperationDialog({
   onClose: () => void;
 }) {
   const [report, setReport] = useState<DryRunReport | null>(null);
+  const [auditSaveStatus, setAuditSaveStatus] = useState<
+    "idle" | "pending" | "saved" | "failed"
+  >("idle");
   const D = t.operations.dialog;
   const I = t.operations.interactive;
 
@@ -108,11 +112,35 @@ export function OperationDialog({
 
   const canSimulate = status === "available" || status === "manual_required" || status === "completed";
 
-  function handleSimulate() {
-    if (tenant) {
-      setReport(buildDryRunReport(tenant, operation.type));
-    } else {
+  async function handleSimulate() {
+    if (!tenant) {
       setReport(null);
+      return;
+    }
+
+    const dryRunReport = buildDryRunReport(tenant, operation.type);
+    setReport(dryRunReport);
+    setAuditSaveStatus("pending");
+
+    try {
+      const payload = buildSimulatedDryRunClientPayload(
+        dryRunReport,
+        crypto.randomUUID(),
+      );
+      const response = await fetch("/api/audit/simulated-dry-run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as { ok?: boolean };
+        setAuditSaveStatus(data.ok ? "saved" : "failed");
+      } else {
+        setAuditSaveStatus("failed");
+      }
+    } catch {
+      setAuditSaveStatus("failed");
     }
   }
 
@@ -190,6 +218,14 @@ export function OperationDialog({
           ) : null}
 
           {report ? <DryRunReportPanel report={report} /> : null}
+
+          {auditSaveStatus === "saved" ? (
+            <WarningCallout variant="info">{D.auditSaveSuccess}</WarningCallout>
+          ) : null}
+
+          {auditSaveStatus === "failed" ? (
+            <WarningCallout variant="warning">{D.auditSaveFailed}</WarningCallout>
+          ) : null}
         </div>
 
         <div className="flex items-center justify-end gap-2 border-t border-slate-100 p-4">

@@ -85,6 +85,12 @@ describe("operations UI safety strings", () => {
     expect(t.operations.interactive.previewPhaseOnly).toBe(
       "هذه المرحلة للمعاينة والتحقق فقط.",
     );
+    expect(t.operations.dialog.auditSaveSuccess).toBe(
+      "تم حفظ تقرير المحاكاة في سجل التدقيق",
+    );
+    expect(t.operations.dialog.auditSaveFailed).toContain(
+      "تم إنشاء المحاكاة محليًا",
+    );
   });
 
   it("theoretical commands contain no likely secrets", () => {
@@ -124,7 +130,6 @@ describe("no real operations execution route", () => {
     const files = [
       join(process.cwd(), "src", "app", "operations", "page.tsx"),
       join(process.cwd(), "src", "components", "OperationsCatalogPanel.tsx"),
-      join(process.cwd(), "src", "components", "OperationDialog.tsx"),
     ];
     for (const file of files) {
       const content = readFileSync(file, "utf8");
@@ -132,5 +137,15 @@ describe("no real operations execution route", () => {
       expect(content).not.toMatch(/\/api\/operations/);
       expect(content).not.toMatch(/method\s*:\s*["']POST["']/i);
     }
+  });
+
+  it("OperationDialog posts only to the simulated audit dry-run route", () => {
+    const content = readFileSync(
+      join(process.cwd(), "src", "components", "OperationDialog.tsx"),
+      "utf8",
+    );
+    expect(content).toMatch(/\/api\/audit\/simulated-dry-run/);
+    expect(content).not.toMatch(/\/api\/operations/);
+    expect(content).not.toMatch(/RAQEEM_PLATFORM_AUDIT_WRITE_TOKEN/);
   });
 });
