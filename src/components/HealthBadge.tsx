@@ -7,6 +7,7 @@ const CHECK_TONE: Record<CheckStatus, Tone> = {
   warning: "amber",
   failed: "red",
   pending: "gray",
+  recorded: "green",
   unknown: "gray",
 };
 

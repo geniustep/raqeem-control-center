@@ -34,7 +34,7 @@ export type LifecycleStageStatus =
   | "pending";
 
 /** Result of a health check or a smoke test. */
-export type CheckStatus = "passed" | "warning" | "failed" | "pending" | "unknown";
+export type CheckStatus = "passed" | "warning" | "failed" | "pending" | "recorded" | "unknown";
 
 /** Whether an operation can be run from the control center (Phase 1: simulated). */
 export type OperationStatus =

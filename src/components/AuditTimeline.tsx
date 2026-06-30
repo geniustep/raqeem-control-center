@@ -9,6 +9,7 @@ const DOT: Record<string, string> = {
   warning: "bg-amber-500",
   failed: "bg-red-500",
   pending: "bg-slate-300",
+  recorded: "bg-emerald-500",
   unknown: "bg-slate-300",
 };
 

@@ -33,6 +33,7 @@ const CHECK_STATUSES: CheckStatus[] = [
   "warning",
   "failed",
   "pending",
+  "recorded",
   "unknown",
 ];
 const OVERALL_STATUSES: TenantOverallStatus[] = [

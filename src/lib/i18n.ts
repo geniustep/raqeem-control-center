@@ -266,6 +266,7 @@ const ar = {
       warning: "تنبيه",
       failed: "فشل",
       pending: "قيد الانتظار",
+      recorded: "محاكاة مسجلة",
       unknown: "غير معروف",
     } satisfies Record<CheckStatus, string>,
     lifecycle: {
