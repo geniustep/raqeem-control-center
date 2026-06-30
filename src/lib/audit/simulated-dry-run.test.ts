@@ -3,8 +3,11 @@ import { getTenantByCode } from "@/data/tenants";
 import { buildSimulatedDryRunClientPayload } from "@/lib/audit/simulated-dry-run-payload";
 import {
   ALLOWED_CLIENT_KEYS,
+  ALLOWED_ODOO_UPSTREAM_KEYS,
+  buildOdooUpstreamPayload,
   findForbiddenClientKeys,
   FORBIDDEN_CLIENT_KEYS,
+  FORBIDDEN_ODOO_UPSTREAM_KEYS,
   getAuditWriteConfig,
   postSimulatedDryRunToOdoo,
   validateClientSimulatedDryRunPayload,
@@ -141,6 +144,30 @@ describe("getAuditWriteConfig", () => {
   });
 });
 
+describe("buildOdooUpstreamPayload", () => {
+  it("includes only allowed Odoo upstream keys", () => {
+    const clientPayload = validateClientSimulatedDryRunPayload(validPayload());
+    expect(clientPayload.ok).toBe(true);
+    if (!clientPayload.ok) return;
+
+    const upstream = buildOdooUpstreamPayload(clientPayload.data);
+    expect(Object.keys(upstream).sort()).toEqual(
+      [...ALLOWED_ODOO_UPSTREAM_KEYS].sort(),
+    );
+  });
+
+  it("does not include forbidden enrichment fields", () => {
+    const clientPayload = validateClientSimulatedDryRunPayload(validPayload());
+    expect(clientPayload.ok).toBe(true);
+    if (!clientPayload.ok) return;
+
+    const upstream = buildOdooUpstreamPayload(clientPayload.data);
+    for (const forbidden of FORBIDDEN_ODOO_UPSTREAM_KEYS) {
+      expect(upstream).not.toHaveProperty(forbidden);
+    }
+  });
+});
+
 describe("postSimulatedDryRunToOdoo", () => {
   const fetchMock = vi.fn();
 
@@ -157,9 +184,11 @@ describe("postSimulatedDryRunToOdoo", () => {
     fetchMock.mockResolvedValue(
       new Response(
         JSON.stringify({
-          auditLogId: "audit-42",
-          actionType: "simulated_dry_run",
-          result: "recorded",
+          audit_log: {
+            id: "audit-42",
+            action_type: "simulated_dry_run",
+            result: "recorded",
+          },
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       ),
@@ -191,10 +220,49 @@ describe("postSimulatedDryRunToOdoo", () => {
     expect(headers.Authorization).toBe("Bearer server-only-write-token");
 
     const upstreamBody = JSON.parse(String(init.body)) as Record<string, unknown>;
-    expect(upstreamBody.operation_name).toBeTruthy();
-    expect(upstreamBody.risk_level).toBeTruthy();
-    expect(upstreamBody.timestamp).toBeTruthy();
-    expect(upstreamBody.actor).toBe("control-center-ops-ui");
+    expect(Object.keys(upstreamBody).sort()).toEqual(
+      [...ALLOWED_ODOO_UPSTREAM_KEYS].sort(),
+    );
+    for (const forbidden of [
+      "operation_name",
+      "severity",
+      "risk_level",
+      "actor",
+      "timestamp",
+    ]) {
+      expect(upstreamBody).not.toHaveProperty(forbidden);
+    }
+  });
+
+  it("parses nested audit_log response from Odoo", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          audit_log: {
+            id: "audit-99",
+            action_type: "simulated_dry_run",
+            result: "ok",
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const clientPayload = validateClientSimulatedDryRunPayload(validPayload());
+    expect(clientPayload.ok).toBe(true);
+    if (!clientPayload.ok) return;
+
+    const result = await postSimulatedDryRunToOdoo(clientPayload.data, {
+      apiBaseUrl: "http://odoo.test",
+      writeToken: "server-only-write-token",
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      auditLogId: "audit-99",
+      actionType: "simulated_dry_run",
+      result: "ok",
+    });
   });
 
   it("returns a safe failure without leaking upstream secrets", async () => {

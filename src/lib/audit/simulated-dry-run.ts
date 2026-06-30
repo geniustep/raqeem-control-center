@@ -1,7 +1,6 @@
 import "server-only";
 
-import { getOperation, OPERATION_ORDER } from "@/lib/operation-catalog";
-import type { OperationType, RiskLevel } from "@/types";
+import { OPERATION_ORDER } from "@/lib/operation-catalog";
 
 export const ALLOWED_CLIENT_KEYS = [
   "tenant_code",
@@ -26,6 +25,39 @@ export const FORBIDDEN_CLIENT_KEYS = [
   "secret",
   "private_key",
   "env",
+] as const;
+
+/** Top-level keys that must never be sent to Odoo simulated-dry-run. */
+export const FORBIDDEN_ODOO_UPSTREAM_KEYS = [
+  "operation_name",
+  "severity",
+  "risk_level",
+  "actor",
+  "timestamp",
+  "command",
+  "shell",
+  "script",
+  "ssh",
+  "exec",
+  "execute",
+  "run",
+  "restart",
+  "upgrade",
+  "password",
+  "token",
+  "secret",
+  "private_key",
+  "env",
+] as const;
+
+export const ALLOWED_ODOO_UPSTREAM_KEYS = [
+  "tenant_code",
+  "operation_code",
+  "source",
+  "dry_run_report",
+  "preflight_checks",
+  "theoretical_steps",
+  "client_request_id",
 ] as const;
 
 const ALLOWED_KEY_SET = new Set<string>(ALLOWED_CLIENT_KEYS);
@@ -213,17 +245,6 @@ export function validateClientSimulatedDryRunPayload(
   };
 }
 
-function riskToSeverity(risk: RiskLevel): string {
-  switch (risk) {
-    case "high":
-      return "high";
-    case "medium":
-      return "medium";
-    default:
-      return "low";
-  }
-}
-
 function pickSafeString(record: Record<string, unknown>, ...keys: string[]): string {
   for (const key of keys) {
     const value = record[key];
@@ -237,29 +258,63 @@ function pickSafeString(record: Record<string, unknown>, ...keys: string[]): str
   return "";
 }
 
-/** Forward a validated client payload to Odoo using the server-side write token. */
-export async function postSimulatedDryRunToOdoo(
+/** Build the Odoo upstream body — allowed keys only, no server enrichment. */
+export function buildOdooUpstreamPayload(
   clientPayload: ValidatedClientPayload,
-  config: Pick<AuditWriteConfig, "apiBaseUrl" | "writeToken">,
-): Promise<SafeAuditWriteResponse> {
-  const operation = getOperation(clientPayload.operation_code as OperationType);
-  const baseUrl = config.apiBaseUrl.replace(/\/+$/, "");
-  const url = `${baseUrl}/api/v1/platform/audit/simulated-dry-run`;
-
-  const odooPayload = {
+): Record<string, unknown> {
+  return {
     tenant_code: clientPayload.tenant_code,
     operation_code: clientPayload.operation_code,
-    operation_name: operation.title,
     source: clientPayload.source,
-    risk_level: operation.riskLevel,
-    severity: riskToSeverity(operation.riskLevel),
-    actor: "control-center-ops-ui",
-    timestamp: new Date().toISOString(),
     dry_run_report: clientPayload.dry_run_report,
     preflight_checks: clientPayload.preflight_checks,
     theoretical_steps: clientPayload.theoretical_steps,
     client_request_id: clientPayload.client_request_id,
   };
+}
+
+function parseOdooAuditSuccess(raw: Record<string, unknown>): SafeAuditWriteSuccess | null {
+  const auditLog = raw.audit_log;
+  if (isPlainObject(auditLog)) {
+    const auditLogId = pickSafeString(auditLog, "id", "auditLogId", "audit_log_id");
+    const actionType = pickSafeString(
+      auditLog,
+      "action_type",
+      "actionType",
+      "action",
+    );
+    const result = pickSafeString(auditLog, "result", "status");
+    if (auditLogId) {
+      return {
+        ok: true,
+        auditLogId,
+        actionType: actionType || "simulated_dry_run",
+        result: result || "recorded",
+      };
+    }
+  }
+
+  const auditLogId = pickSafeString(raw, "auditLogId", "audit_log_id", "id");
+  const actionType = pickSafeString(raw, "actionType", "action_type", "action");
+  const result = pickSafeString(raw, "result", "status");
+  if (!auditLogId) return null;
+
+  return {
+    ok: true,
+    auditLogId,
+    actionType: actionType || "simulated_dry_run",
+    result: result || "recorded",
+  };
+}
+
+/** Forward a validated client payload to Odoo using the server-side write token. */
+export async function postSimulatedDryRunToOdoo(
+  clientPayload: ValidatedClientPayload,
+  config: Pick<AuditWriteConfig, "apiBaseUrl" | "writeToken">,
+): Promise<SafeAuditWriteResponse> {
+  const baseUrl = config.apiBaseUrl.replace(/\/+$/, "");
+  const url = `${baseUrl}/api/v1/platform/audit/simulated-dry-run`;
+  const odooPayload = buildOdooUpstreamPayload(clientPayload);
 
   let response: Response;
   try {
@@ -292,18 +347,10 @@ export async function postSimulatedDryRunToOdoo(
     return { ok: false, error: "upstream_invalid_response" };
   }
 
-  const auditLogId = pickSafeString(raw, "auditLogId", "audit_log_id", "id");
-  const actionType = pickSafeString(raw, "actionType", "action_type", "action");
-  const result = pickSafeString(raw, "result", "status");
-
-  if (!auditLogId) {
+  const parsed = parseOdooAuditSuccess(raw);
+  if (!parsed) {
     return { ok: false, error: "upstream_invalid_response" };
   }
 
-  return {
-    ok: true,
-    auditLogId,
-    actionType: actionType || "simulated_dry_run",
-    result: result || "recorded",
-  };
+  return parsed;
 }
