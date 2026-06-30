@@ -226,7 +226,7 @@ export interface TenantOperationRun {
   operationType: OperationType | string;
   title: string;
   result: CheckStatus;
-  startedAt: string;
+  startedAt?: string;
   finishedAt?: string;
   actor: string;
   riskLevel: RiskLevel;
@@ -237,7 +237,7 @@ export interface TenantOperationRun {
 
 export interface AuditLogEntry {
   id: string;
-  date: string;
+  date?: string;
   tenantCode: string;
   actor: string;
   action: string;

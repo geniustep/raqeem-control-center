@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { mapOdooAuditEntry } from "@/lib/data-source/mappers";
+import { mapOdooAuditEntry, mapOdooTenant } from "@/lib/data-source/mappers";
+import { formatOptionalDateTime } from "@/lib/format";
 import { tCheck } from "@/lib/i18n";
 
 describe("mapOdooAuditEntry", () => {
@@ -36,5 +37,43 @@ describe("mapOdooAuditEntry", () => {
         result: "failed",
       })!.result,
     ).toBe("failed");
+  });
+
+  it("does not invent epoch date when audit date is missing", () => {
+    const entry = mapOdooAuditEntry({
+      id: "3",
+      tenant_code: "nibras",
+      action: "run_backend_smoke",
+      result: "passed",
+    });
+
+    expect(entry).not.toBeNull();
+    expect(entry!.date).toBeUndefined();
+    expect(formatOptionalDateTime(entry!.date)).not.toContain("1970");
+  });
+});
+
+describe("mapOperationRun via mapOdooTenant", () => {
+  it("preserves null started_at without epoch fallback", () => {
+    const tenant = mapOdooTenant({
+      code: "demo",
+      name: "Demo",
+      operation_runs: [
+        {
+          id: "run-1",
+          title: "Smoke test",
+          result: "passed",
+          started_at: null,
+          finished_at: null,
+        },
+      ],
+    });
+
+    expect(tenant).not.toBeNull();
+    const run = tenant!.operationRuns[0];
+    expect(run.startedAt).toBeUndefined();
+    expect(run.finishedAt).toBeUndefined();
+    expect(formatOptionalDateTime(run.finishedAt ?? run.startedAt)).toBe("غير معروف");
+    expect(formatOptionalDateTime(run.finishedAt ?? run.startedAt)).not.toContain("1970");
   });
 });

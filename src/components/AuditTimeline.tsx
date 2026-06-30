@@ -1,6 +1,6 @@
 import type { AuditLogEntry } from "@/types";
 import { HealthBadge, RiskBadge } from "@/components/HealthBadge";
-import { formatDateTime } from "@/lib/format";
+import { formatOptionalDateTime } from "@/lib/format";
 import { EmptyState } from "@/components/EmptyState";
 import { t } from "@/lib/i18n";
 
@@ -41,7 +41,7 @@ export function AuditTimeline({
               </div>
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-              <span dir="ltr" className="font-mono">{formatDateTime(e.date)}</span>
+              <span dir="ltr" className="font-mono">{formatOptionalDateTime(e.date)}</span>
               {showTenant ? <span>· {e.tenantCode}</span> : null}
               <span>· {e.actor}</span>
             </div>

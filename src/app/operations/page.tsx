@@ -9,7 +9,7 @@ import {
   loadOperationsPageData,
   loadTenants,
 } from "@/lib/data-source/platform-data-source";
-import { formatDateTime } from "@/lib/format";
+import { formatOptionalDateTime } from "@/lib/format";
 import { t } from "@/lib/i18n";
 import Link from "next/link";
 
@@ -67,7 +67,7 @@ export default async function OperationsPage() {
                   {runs.map((run) => (
                     <tr key={run.id} className="hover:bg-slate-50/60">
                       <td className={`${TD} whitespace-nowrap font-mono text-xs text-slate-500`} dir="ltr">
-                        {formatDateTime(run.finishedAt ?? run.startedAt)}
+                        {formatOptionalDateTime(run.finishedAt ?? run.startedAt)}
                       </td>
                       <td className={`${TD} whitespace-nowrap`}>
                         <Link href={`/tenants/${run.tenantCode}`} className="font-mono text-xs text-brand-700 hover:underline" dir="ltr">

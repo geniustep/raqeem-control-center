@@ -328,9 +328,7 @@ function mapOperationRun(record: JsonRecord, tenantCodeFallback?: string): Tenan
       "run_backend_smoke",
     title: pickString(record, "title", "action", "name") ?? "—",
     result: asCheckStatus(record.result ?? record.status, "unknown"),
-    startedAt:
-      pickString(record, "started_at", "startedAt", "date") ??
-      new Date(0).toISOString(),
+    startedAt: pickString(record, "started_at", "startedAt", "date"),
     finishedAt: pickString(record, "finished_at", "finishedAt"),
     actor: pickString(record, "actor") ?? "platform-operator",
     riskLevel: asRiskLevel(record.risk_level ?? record.risk ?? record.riskLevel),
@@ -470,9 +468,7 @@ export function mapOdooAuditEntry(raw: unknown): AuditLogEntry | null {
 
   return {
     id,
-    date:
-      pickString(record, "date", "started_at", "startedAt", "finished_at", "finishedAt") ??
-      new Date(0).toISOString(),
+    date: pickString(record, "date", "started_at", "startedAt", "finished_at", "finishedAt"),
     tenantCode,
     actor: pickString(record, "actor") ?? "platform-operator",
     action: pickString(record, "action", "title", "name") ?? "—",

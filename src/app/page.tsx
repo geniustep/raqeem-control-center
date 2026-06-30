@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { DataSourceBanner } from "@/components/DataSourceBanner";
 import { DataSourceErrorState } from "@/components/DataSourceErrorState";
 import { loadDashboardData } from "@/lib/data-source/platform-data-source";
-import { formatDateTime } from "@/lib/format";
+import { formatOptionalDateTime } from "@/lib/format";
 import { t } from "@/lib/i18n";
 
 export default async function DashboardPage() {
@@ -82,7 +82,7 @@ export default async function DashboardPage() {
                       <div className="mt-0.5 flex items-center gap-2 text-xs text-slate-500">
                         <span>{run.tenantCode}</span>
                         <span dir="ltr" className="font-mono">
-                          {formatDateTime(run.finishedAt ?? run.startedAt)}
+                          {formatOptionalDateTime(run.finishedAt ?? run.startedAt)}
                         </span>
                       </div>
                     </div>

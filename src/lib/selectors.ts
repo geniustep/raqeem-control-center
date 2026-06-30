@@ -87,6 +87,13 @@ export function getAuditLog(list: Tenant[] = allTenants): AuditLogEntry[] {
   }));
 }
 
+function timestampOf(iso?: string): number | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t) || t === 0) return null;
+  return t;
+}
+
 function timeOf(run: TenantOperationRun): number {
-  return new Date(run.finishedAt ?? run.startedAt).getTime();
+  return timestampOf(run.finishedAt ?? run.startedAt) ?? 0;
 }
