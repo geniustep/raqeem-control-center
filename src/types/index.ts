@@ -177,11 +177,29 @@ export interface TenantFrontend {
   note?: string;
 }
 
+/** Canonical health-check keys returned by Odoo platform health probes. */
+export type TenantHealthCheckKey =
+  | "frontend"
+  | "api"
+  | "ssl"
+  | "service"
+  | "port"
+  | "database"
+  | "filestore"
+  | "registry_completeness";
+
 /** A single named health/smoke check shown on the tenant detail page. */
 export interface TenantHealthCheck {
+  /** Probe id / key, e.g. `frontend` or legacy mock ids like `api_https`. */
   id: string;
   label: string;
   status: CheckStatus;
+  checkedAt?: string;
+  /** Short operator-facing note — never raw command output or secrets. */
+  message?: string;
+  /** Probe origin, e.g. `readonly_probe`. */
+  source?: string;
+  /** @deprecated Prefer {@link message}; kept for seed/mock compatibility. */
   detail?: string;
 }
 

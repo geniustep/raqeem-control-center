@@ -11,6 +11,7 @@ import type {
   LifecycleStageStatus,
   OperationStatus,
   RiskLevel,
+  TenantHealthCheckKey,
   TenantLifecycleStage,
   TenantOverallStatus,
 } from "@/types";
@@ -133,7 +134,7 @@ const ar = {
       database: "قاعدة البيانات",
       odoo: "Odoo",
       domains: "النطاقات",
-      health: "فحوصات الصحة",
+      health: "فحوص الصحة",
       operations: "العمليات",
       audit: "سجل التدقيق",
     },
@@ -180,6 +181,27 @@ const ar = {
     domains: {
       dns: "DNS",
       origin: "وجهة الأصل (Origin)",
+    },
+    healthChecks: {
+      empty: "لا توجد فحوص صحة مسجلة بعد لهذا المستأجر",
+      checkedAt: "آخر فحص",
+      source: "المصدر",
+      message: "ملاحظة",
+      note:
+        "الحالات «غير معروف» و«غير مُعدّ» لا تُعدّ فشلًا صريحًا — فقط «فشل» يدل على عطل مؤكّد.",
+      names: {
+        frontend: "الواجهة (Frontend)",
+        api: "API",
+        ssl: "SSL",
+        service: "الخدمة (Service)",
+        port: "المنفذ (Port)",
+        database: "قاعدة البيانات",
+        filestore: "Filestore",
+        registry_completeness: "اكتمال السجل (Registry)",
+      } satisfies Record<TenantHealthCheckKey, string>,
+      sources: {
+        readonly_probe: "فحص للقراءة فقط",
+      },
     },
   },
   operations: {
@@ -328,3 +350,28 @@ export const tOperationStatus = (s: OperationStatus): string =>
   t.status.operation[s];
 export const tRisk = (s: RiskLevel): string => t.status.risk[s];
 export const tStage = (s: TenantLifecycleStage): string => t.lifecycleStage[s];
+
+export const HEALTH_CHECK_DISPLAY_ORDER: TenantHealthCheckKey[] = [
+  "frontend",
+  "api",
+  "ssl",
+  "service",
+  "port",
+  "database",
+  "filestore",
+  "registry_completeness",
+];
+
+export function tHealthCheckName(id: string, fallbackLabel?: string): string {
+  const names = t.tenantDetail.healthChecks.names;
+  if (id in names) {
+    return names[id as TenantHealthCheckKey];
+  }
+  if (fallbackLabel && fallbackLabel !== "—") return fallbackLabel;
+  return id;
+}
+
+export function tHealthCheckSource(source: string): string {
+  const known = t.tenantDetail.healthChecks.sources as Record<string, string>;
+  return known[source] ?? source;
+}

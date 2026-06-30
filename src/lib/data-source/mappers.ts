@@ -25,7 +25,8 @@ import type {
   TenantApiHealth,
   PlatformSummary,
 } from "@/types";
-import { LIFECYCLE_ORDER } from "@/lib/i18n";
+import { LIFECYCLE_ORDER, HEALTH_CHECK_DISPLAY_ORDER } from "@/lib/i18n";
+import { isMissingTimestamp, sanitizeHealthCheckMessage } from "@/lib/format";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -378,16 +379,72 @@ function mapFrontend(record: JsonRecord, frontendDomain: string): TenantFrontend
   };
 }
 
-function mapHealthChecks(raw: unknown): TenantHealthCheck[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.map((item, index) => {
-    const record = asRecord(item);
-    return {
-      id: pickString(record, "id") ?? `check-${index}`,
-      label: pickString(record, "label") ?? "—",
-      status: asCheckStatus(record.status, "unknown"),
-      detail: pickString(record, "detail"),
-    };
+function pickTimestamp(record: JsonRecord, ...keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = record[key];
+    if (value == null || value === "") continue;
+    if (typeof value !== "string") continue;
+    if (isMissingTimestamp(value)) continue;
+    return value;
+  }
+  return undefined;
+}
+
+function mapSingleHealthCheck(record: JsonRecord, idFallback: string): TenantHealthCheck {
+  const id = pickString(record, "id", "name", "key", "check") ?? idFallback;
+  const rawMessage = pickString(
+    record,
+    "message",
+    "notes",
+    "note",
+    "detail",
+    "sanitized_error",
+    "sanitizedError",
+  );
+  const message = rawMessage ? sanitizeHealthCheckMessage(rawMessage) : undefined;
+
+  return {
+    id,
+    label: pickString(record, "label") ?? id,
+    status: asCheckStatus(record.status, "unknown"),
+    checkedAt: pickTimestamp(record, "checked_at", "checkedAt"),
+    message,
+    source: pickString(record, "source"),
+    detail: message,
+  };
+}
+
+function healthCheckSortIndex(id: string): number {
+  const index = HEALTH_CHECK_DISPLAY_ORDER.indexOf(
+    id as (typeof HEALTH_CHECK_DISPLAY_ORDER)[number],
+  );
+  return index === -1 ? HEALTH_CHECK_DISPLAY_ORDER.length + 1 : index;
+}
+
+/** Map Odoo `health_checks` (array or keyed object) into internal checks. */
+export function mapHealthChecks(raw: unknown): TenantHealthCheck[] {
+  if (raw == null) return [];
+
+  let checks: TenantHealthCheck[];
+
+  if (Array.isArray(raw)) {
+    checks = raw.map((item, index) => {
+      const record = asRecord(item);
+      const id = pickString(record, "id", "name", "key", "check") ?? `check-${index}`;
+      return mapSingleHealthCheck(record, id);
+    });
+  } else if (typeof raw === "object") {
+    checks = Object.entries(asRecord(raw)).map(([key, value]) =>
+      mapSingleHealthCheck(asRecord(value), key),
+    );
+  } else {
+    return [];
+  }
+
+  return checks.sort((a, b) => {
+    const order = healthCheckSortIndex(a.id) - healthCheckSortIndex(b.id);
+    if (order !== 0) return order;
+    return a.id.localeCompare(b.id);
   });
 }
 

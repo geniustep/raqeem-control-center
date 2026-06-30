@@ -50,3 +50,33 @@ export function formatDate(iso: string): string {
 export function boolText(v: boolean, yes = "نعم", no = "لا"): string {
   return v ? yes : no;
 }
+
+const SECRET_FIELD_PATTERN =
+  /(password|passwd|token|secret|api[_-]?key|private[_-]?key)\s*[:=]\s*\S+/gi;
+const UNIX_PATH_PATTERN = /(?:\/[\w.-]+){2,}/g;
+const WIN_PATH_PATTERN = /[A-Za-z]:\\(?:[\w.-]+\\)+[\w.-]+/g;
+
+/** Strip sensitive paths and credential-like fragments from health-check messages. */
+export function sanitizeHealthCheckMessage(message: string): string {
+  let s = message.trim();
+  if (s.length === 0) return s;
+
+  if (/^(stdout|stderr|command output)\b/i.test(s)) {
+    return "تفاصيل تقنية مخفية";
+  }
+
+  s = s.replace(SECRET_FIELD_PATTERN, "$1=[مخفي]");
+  s = s.replace(UNIX_PATH_PATTERN, (match) => {
+    const parts = match.split("/");
+    return `…/${parts[parts.length - 1]}`;
+  });
+  s = s.replace(WIN_PATH_PATTERN, (match) => {
+    const parts = match.split("\\");
+    return `…\\${parts[parts.length - 1]}`;
+  });
+
+  if (s.length > 500) {
+    return `${s.slice(0, 497)}…`;
+  }
+  return s;
+}

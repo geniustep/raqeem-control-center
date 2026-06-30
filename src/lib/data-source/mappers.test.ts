@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   isCheckExplicitFailure,
+  mapHealthChecks,
   mapOdooAuditEntry,
   mapOdooDashboardAggregate,
   mapOdooTenant,
   mapOdooTenantsResponse,
 } from "@/lib/data-source/mappers";
-import { formatOptionalDateTime } from "@/lib/format";
-import { t, tCheck } from "@/lib/i18n";
+import { formatOptionalDateTime, sanitizeHealthCheckMessage } from "@/lib/format";
+import { t, tCheck, tHealthCheckName } from "@/lib/i18n";
 import { getPlatformSummary } from "@/lib/tenant-status";
 
 describe("mapOdooAuditEntry", () => {
@@ -161,6 +162,110 @@ describe("mapOdooTenantsResponse", () => {
     expect(local.totalTenants).toBe(1);
     expect(local.sslReady).toBe(1);
     expect(local.fromOdoo).toBeUndefined();
+  });
+});
+
+describe("mapHealthChecks", () => {
+  it("maps snake_case array health_checks from Odoo tenant detail", () => {
+    const checks = mapHealthChecks([
+      {
+        id: "frontend",
+        status: "passed",
+        checked_at: "2026-06-30T14:22:00.000Z",
+        notes: "Login page visible",
+        source: "readonly_probe",
+      },
+      {
+        id: "api",
+        status: "warning",
+        checked_at: "2026-06-30T14:22:01.000Z",
+        sanitized_error: "HTTP 502 from upstream",
+        source: "readonly_probe",
+      },
+      {
+        id: "ssl",
+        status: "failed",
+        checked_at: "2026-06-30T14:22:02.000Z",
+        notes: "Certificate expired",
+      },
+      {
+        id: "registry_completeness",
+        status: "not_configured",
+        checked_at: null,
+      },
+    ]);
+
+    expect(checks).toHaveLength(4);
+    expect(checks[0]).toMatchObject({
+      id: "frontend",
+      status: "passed",
+      checkedAt: "2026-06-30T14:22:00.000Z",
+      message: "Login page visible",
+      source: "readonly_probe",
+    });
+    expect(checks[1].message).toBe("HTTP 502 from upstream");
+    expect(checks[2].status).toBe("failed");
+    expect(checks[3].status).toBe("not_configured");
+    expect(checks[3].checkedAt).toBeUndefined();
+    expect(formatOptionalDateTime(checks[3].checkedAt)).not.toContain("1970");
+  });
+
+  it("maps keyed object health_checks in canonical display order", () => {
+    const checks = mapHealthChecks({
+      database: { status: "passed", checked_at: "2026-06-30T10:00:00Z" },
+      frontend: { status: "warning", notes: "Fallback branding" },
+      port: { status: "unknown" },
+      filestore: { status: "not_configured" },
+    });
+
+    expect(checks.map((c) => c.id)).toEqual(["frontend", "port", "database", "filestore"]);
+    expect(tHealthCheckName("frontend")).toBe("الواجهة (Frontend)");
+  });
+
+  it("returns empty array for missing health_checks (empty state)", () => {
+    expect(mapHealthChecks(undefined)).toEqual([]);
+    expect(mapHealthChecks(null)).toEqual([]);
+    expect(
+      mapOdooTenant({ code: "demo", name: "Demo" })!.healthChecks,
+    ).toEqual([]);
+  });
+
+  it("sanitizes sensitive paths in health check messages", () => {
+    const checks = mapHealthChecks([
+      {
+        id: "service",
+        status: "failed",
+        notes: "Error in /var/lib/odoo/filestore/school/check.txt token=abc123",
+      },
+    ]);
+
+    expect(checks[0].message).not.toContain("/var/lib/odoo");
+    expect(checks[0].message).toContain("check.txt");
+    expect(checks[0].message).not.toContain("abc123");
+  });
+
+  it("does not treat unknown or not_configured as explicit failure", () => {
+    const checks = mapHealthChecks([
+      { id: "port", status: "unknown" },
+      { id: "filestore", status: "not_configured" },
+      { id: "api", status: "failed" },
+    ]);
+
+    for (const check of checks) {
+      if (check.status === "failed") {
+        expect(isCheckExplicitFailure(check.status)).toBe(true);
+      } else {
+        expect(isCheckExplicitFailure(check.status)).toBe(false);
+      }
+    }
+  });
+});
+
+describe("sanitizeHealthCheckMessage", () => {
+  it("redacts command output headers", () => {
+    expect(sanitizeHealthCheckMessage("stdout: lots of shell output")).toBe(
+      "تفاصيل تقنية مخفية",
+    );
   });
 });
 

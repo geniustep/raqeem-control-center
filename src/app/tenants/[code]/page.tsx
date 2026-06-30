@@ -9,7 +9,7 @@ import { TenantInfrastructurePanel } from "@/components/TenantInfrastructurePane
 import { TenantDatabasePanel } from "@/components/TenantDatabasePanel";
 import { TenantOdooPanel } from "@/components/TenantOdooPanel";
 import { TenantDomainsPanel } from "@/components/TenantDomainsPanel";
-import { TenantHealthPanel } from "@/components/TenantHealthPanel";
+import { TenantHealthChecksPanel } from "@/components/TenantHealthChecksPanel";
 import { TenantOperationsPanel } from "@/components/TenantOperationsPanel";
 import { AuditTimeline } from "@/components/AuditTimeline";
 import { DataSourceBanner } from "@/components/DataSourceBanner";
@@ -134,7 +134,7 @@ export default async function TenantDetailPage({
             <TenantOdooPanel tenant={tenant} />
             <TenantDomainsPanel tenant={tenant} />
           </div>
-          <TenantHealthPanel tenant={tenant} />
+          <TenantHealthChecksPanel tenant={tenant} />
           <TenantOperationsPanel tenant={tenant} />
         </div>
       </div>
