@@ -1,6 +1,7 @@
 const PROTECTED_ROOTS = [
   "/tenants",
   "/domains",
+  "/infrastructure",
   "/operations",
   "/audit",
   "/settings",

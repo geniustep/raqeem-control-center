@@ -3,6 +3,7 @@ import "server-only";
 import type { ControlCenterDataSource } from "@/lib/data-source/config";
 import type {
   AuditLogEntry,
+  InfrastructureServer,
   PlatformSummary,
   Tenant,
   TenantDomain,
@@ -49,6 +50,8 @@ export interface PlatformDataSource {
   listOperations(): Promise<TenantOperation[]>;
   listOperationRuns(): Promise<TenantOperationRun[]>;
   listAuditLogs(): Promise<AuditLogEntry[]>;
+  listInfrastructureServers(): Promise<InfrastructureServer[]>;
+  getInfrastructureServer(code: string): Promise<InfrastructureServer | null>;
   getPlatformSummary(): Promise<PlatformSummary>;
   fetchTenantsWithDashboard?(): Promise<{
     tenants: Tenant[];

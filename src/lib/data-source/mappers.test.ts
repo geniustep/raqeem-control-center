@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   isCheckExplicitFailure,
+  isInfraSyncExplicitFailure,
   mapHealthChecks,
   mapOdooAuditEntry,
   mapOdooDashboardAggregate,
+  mapOdooInfrastructureServer,
+  mapOdooInfrastructureServers,
   mapOdooTenant,
   mapOdooTenantsResponse,
 } from "@/lib/data-source/mappers";
@@ -304,5 +307,120 @@ describe("dashboard warning metric label", () => {
     expect(summary!.tenantsWithWarnings).toBe(9);
     expect(t.dashboard.metrics.tenantsWithWarnings).toBe("تنبيهات صحية");
     expect(t.dashboard.metrics.tenantsWithWarnings).not.toMatch(/مدارس/);
+  });
+});
+
+describe("mapOdooInfrastructureServer", () => {
+  it("maps snake_case infrastructure server from Odoo list envelope", () => {
+    const servers = mapOdooInfrastructureServers({
+      data: [
+        {
+          code: "raqeem-prod-app-1",
+          name: "Production App",
+          provider: "digitalocean",
+          provider_status: "active",
+          provider_resource_id: "412345678",
+          infra_sync_status: "synced",
+          public_ip: "164.92.199.180",
+          private_ip: "10.114.0.8",
+          region: "fra1",
+          server_role: "app",
+          monitoring_enabled: true,
+          size_slug: "s-2vcpu-4gb",
+          vcpus: 2,
+          memory_mb: 4096,
+          disk_gb: 80,
+          last_infra_check_at: "2026-06-29T14:22:00.000Z",
+          linked_tenants: { app: ["alwah"], data: ["alwah-db"] },
+        },
+      ],
+    });
+
+    expect(servers).toHaveLength(1);
+    const server = servers[0];
+    expect(server.code).toBe("raqeem-prod-app-1");
+    expect(server.infraSyncStatus).toBe("synced");
+    expect(server.linkedTenants.app).toEqual(["alwah"]);
+    expect(server.linkedTenants.data).toEqual(["alwah-db"]);
+    expect(formatOptionalDateTime(server.lastInfraCheckAt)).toContain("2026-06-29");
+    expect(formatOptionalDateTime(server.lastInfraCheckAt)).not.toContain("1970");
+  });
+
+  it("treats skipped and never as neutral sync statuses (not error)", () => {
+    const skipped = mapOdooInfrastructureServer({
+      code: "srv-skipped",
+      name: "Skipped",
+      infra_sync_status: "skipped",
+    });
+    const never = mapOdooInfrastructureServer({
+      code: "srv-never",
+      name: "Never",
+      infra_sync_status: "never",
+    });
+    const error = mapOdooInfrastructureServer({
+      code: "srv-error",
+      name: "Error",
+      infra_sync_status: "error",
+    });
+
+    expect(skipped!.infraSyncStatus).toBe("skipped");
+    expect(never!.infraSyncStatus).toBe("never");
+    expect(error!.infraSyncStatus).toBe("error");
+
+    expect(isInfraSyncExplicitFailure(skipped!.infraSyncStatus)).toBe(false);
+    expect(isInfraSyncExplicitFailure(never!.infraSyncStatus)).toBe(false);
+    expect(isInfraSyncExplicitFailure(error!.infraSyncStatus)).toBe(true);
+  });
+
+  it("does not invent epoch date when last_infra_check_at is null", () => {
+    const server = mapOdooInfrastructureServer({
+      code: "srv-null-date",
+      name: "No check",
+      infra_sync_status: "never",
+      last_infra_check_at: null,
+    });
+
+    expect(server).not.toBeNull();
+    expect(server!.lastInfraCheckAt).toBeUndefined();
+    expect(formatOptionalDateTime(server!.lastInfraCheckAt)).toBe("غير معروف");
+    expect(formatOptionalDateTime(server!.lastInfraCheckAt)).not.toContain("1970");
+  });
+
+  it("maps linked tenants app and data arrays", () => {
+    const server = mapOdooInfrastructureServer({
+      code: "srv-links",
+      name: "Links",
+      linked_tenants: {
+        app: ["alwah", "nibras"],
+        data: ["raqeem-alwah"],
+      },
+    });
+
+    expect(server!.linkedTenants.app).toEqual(["alwah", "nibras"]);
+    expect(server!.linkedTenants.data).toEqual(["raqeem-alwah"]);
+  });
+
+  it("maps empty provider_resource_id to null", () => {
+    const server = mapOdooInfrastructureServer({
+      code: "srv-unsynced",
+      name: "Unsynced",
+      provider_resource_id: "",
+      infra_sync_status: "never",
+    });
+
+    expect(server!.providerResourceId).toBeNull();
+  });
+
+  it("sanitizes infra_last_error without leaking secrets", () => {
+    const server = mapOdooInfrastructureServer({
+      code: "srv-err",
+      name: "Err",
+      infra_sync_status: "error",
+      infra_last_error: "token=super-secret-do-token sync failed",
+    });
+
+    expect(server!.infraLastError).toBeDefined();
+    expect(server!.infraLastError).not.toContain("super-secret-do-token");
+    expect(server!.infraLastError).toContain("[مخفي]");
   });
 });

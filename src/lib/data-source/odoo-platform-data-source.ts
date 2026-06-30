@@ -8,6 +8,8 @@ import { OdooApiError, OdooConnectionError } from "@/lib/data-source/errors";
 import {
   mapOdooAuditLogs,
   mapOdooDomains,
+  mapOdooInfrastructureServer,
+  mapOdooInfrastructureServers,
   mapOdooOperationRuns,
   mapOdooOperations,
   mapOdooTenant,
@@ -158,6 +160,30 @@ export class OdooPlatformDataSource implements PlatformDataSource {
 
     const tenantList = await this.listTenants();
     return getAuditLog(tenantList);
+  }
+
+  async listInfrastructureServers() {
+    const body = await this.getJson("/api/v1/platform/infrastructure");
+    return mapOdooInfrastructureServers(body);
+  }
+
+  async getInfrastructureServer(code: string) {
+    try {
+      const body = await this.getJson(
+        `/api/v1/platform/infrastructure/${encodeURIComponent(code)}`,
+      );
+      if (body && typeof body === "object" && !Array.isArray(body)) {
+        const record = body as Record<string, unknown>;
+        const nested = record.data ?? record.server ?? record.infrastructure;
+        if (nested) return mapOdooInfrastructureServer(nested);
+      }
+      return mapOdooInfrastructureServer(body);
+    } catch (error) {
+      if (error instanceof OdooApiError && error.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   async getPlatformSummary() {

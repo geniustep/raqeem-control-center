@@ -1,0 +1,97 @@
+import type { InfrastructureServer } from "@/types";
+
+/** Seed infrastructure registry — mirrors Odoo server records (no secrets). */
+export const infrastructureServers: InfrastructureServer[] = [
+  {
+    code: "raqeem-prod-app-1",
+    name: "Raqeem Production App 1",
+    provider: "digitalocean",
+    providerStatus: "active",
+    providerResourceId: "412345678",
+    infraSyncStatus: "synced",
+    publicIp: "164.92.199.180",
+    privateIp: "10.114.0.8",
+    region: "fra1",
+    serverRole: "app",
+    monitoringEnabled: true,
+    sizeSlug: "s-2vcpu-4gb",
+    vcpus: 2,
+    memoryMb: 4096,
+    diskGb: 80,
+    lastInfraCheckAt: "2026-06-29T14:22:00.000Z",
+    linkedTenants: {
+      app: ["alwah", "nibras"],
+      data: [],
+    },
+  },
+  {
+    code: "raqeem-alwah",
+    name: "Raqeem Alwah Data",
+    provider: "digitalocean",
+    providerStatus: "active",
+    providerResourceId: "412345679",
+    infraSyncStatus: "synced",
+    publicIp: "—",
+    privateIp: "10.114.0.4",
+    region: "fra1",
+    serverRole: "data",
+    monitoringEnabled: true,
+    sizeSlug: "s-2vcpu-4gb",
+    vcpus: 2,
+    memoryMb: 4096,
+    diskGb: 160,
+    lastInfraCheckAt: "2026-06-29T14:22:00.000Z",
+    linkedTenants: {
+      app: [],
+      data: ["alwah"],
+    },
+  },
+  {
+    code: "raqeem-local-registry",
+    name: "Local Registry Stub",
+    provider: "local",
+    providerStatus: "—",
+    providerResourceId: null,
+    infraSyncStatus: "never",
+    publicIp: "—",
+    privateIp: "—",
+    region: "—",
+    serverRole: "registry",
+    monitoringEnabled: false,
+    sizeSlug: "—",
+    vcpus: null,
+    memoryMb: null,
+    diskGb: null,
+    linkedTenants: {
+      app: [],
+      data: [],
+    },
+  },
+  {
+    code: "raqeem-staging-app",
+    name: "Staging App (DO sync skipped)",
+    provider: "digitalocean",
+    providerStatus: "—",
+    providerResourceId: null,
+    infraSyncStatus: "skipped",
+    publicIp: "167.99.0.10",
+    privateIp: "10.114.0.20",
+    region: "fra1",
+    serverRole: "app",
+    monitoringEnabled: false,
+    sizeSlug: "s-1vcpu-2gb",
+    vcpus: 1,
+    memoryMb: 2048,
+    diskGb: 50,
+    linkedTenants: {
+      app: ["demo"],
+      data: [],
+    },
+  },
+];
+
+export function getInfrastructureServerByCode(
+  code: string,
+): InfrastructureServer | undefined {
+  return infrastructureServers.find((s) => s.code === code);
+}

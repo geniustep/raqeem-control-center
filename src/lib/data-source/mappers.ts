@@ -4,7 +4,10 @@ import type {
   AuditLogEntry,
   BrandingStatus,
   CheckStatus,
+  InfrastructureServer,
+  InfrastructureSyncStatus,
   LifecycleState,
+  LinkedTenants,
   OperationType,
   RiskLevel,
   Tenant,
@@ -48,6 +51,15 @@ const OVERALL_STATUSES: TenantOverallStatus[] = [
   "maintenance",
 ];
 const RISK_LEVELS: RiskLevel[] = ["low", "medium", "high"];
+const INFRA_SYNC_STATUSES: InfrastructureSyncStatus[] = [
+  "synced",
+  "skipped",
+  "never",
+  "pending",
+  "error",
+  "stale",
+  "local",
+];
 
 /** Unwrap common Odoo API envelope shapes. */
 export function unwrapPayload<T = unknown>(body: unknown): T[] {
@@ -58,6 +70,9 @@ export function unwrapPayload<T = unknown>(body: unknown): T[] {
       if (Array.isArray(record[key])) return record[key] as T[];
     }
     for (const key of ["tenants", "domains", "operations", "audit", "logs"]) {
+      if (Array.isArray(record[key])) return record[key] as T[];
+    }
+    for (const key of ["infrastructure", "servers"]) {
       if (Array.isArray(record[key])) return record[key] as T[];
     }
   }
@@ -607,6 +622,106 @@ export function mapOdooAuditEntry(raw: unknown): AuditLogEntry | null {
     risk: asRiskLevel(record.risk ?? record.risk_level ?? record.riskLevel),
     notes: pickString(record, "notes"),
   };
+}
+
+/** True only for an explicit sync failure — never/skipped are neutral. */
+export function isInfraSyncExplicitFailure(
+  status: InfrastructureSyncStatus | string,
+): boolean {
+  return status === "error";
+}
+
+function asInfraSyncStatus(
+  value: unknown,
+  fallback: InfrastructureSyncStatus = "never",
+): InfrastructureSyncStatus {
+  if (
+    typeof value === "string" &&
+    INFRA_SYNC_STATUSES.includes(value as InfrastructureSyncStatus)
+  ) {
+    return value as InfrastructureSyncStatus;
+  }
+  return fallback;
+}
+
+function mapLinkedTenants(raw: unknown): LinkedTenants {
+  const record = asRecord(raw);
+  const appRaw = record.app ?? record.app_tenants ?? record.appTenants;
+  const dataRaw = record.data ?? record.data_tenants ?? record.dataTenants;
+  return {
+    app: Array.isArray(appRaw)
+      ? appRaw.filter((x): x is string => typeof x === "string")
+      : [],
+    data: Array.isArray(dataRaw)
+      ? dataRaw.filter((x): x is string => typeof x === "string")
+      : [],
+  };
+}
+
+/** Map a single Odoo infrastructure server payload. */
+export function mapOdooInfrastructureServer(raw: unknown): InfrastructureServer | null {
+  const record = asRecord(raw);
+  const code = pickString(record, "code", "server_code", "serverCode");
+  if (!code) return null;
+
+  const providerResourceIdRaw = pickString(
+    record,
+    "provider_resource_id",
+    "providerResourceId",
+  );
+  const providerResourceId =
+    providerResourceIdRaw && providerResourceIdRaw.trim().length > 0
+      ? providerResourceIdRaw
+      : null;
+
+  const linkedRaw =
+    record.linked_tenants ?? record.linkedTenants ?? record.tenant_links;
+
+  const rawError = pickString(
+    record,
+    "infra_last_error",
+    "infraLastError",
+    "sanitized_error",
+    "sanitizedError",
+  );
+  const infraLastError = rawError
+    ? sanitizeHealthCheckMessage(rawError)
+    : undefined;
+
+  return {
+    code,
+    name: pickString(record, "name", "server_name", "serverName") ?? code,
+    provider: pickString(record, "provider") ?? "—",
+    providerStatus:
+      pickString(record, "provider_status", "providerStatus") ?? "—",
+    providerResourceId,
+    infraSyncStatus: asInfraSyncStatus(
+      record.infra_sync_status ?? record.infraSyncStatus,
+    ),
+    publicIp: pickString(record, "public_ip", "publicIp") ?? "—",
+    privateIp: pickString(record, "private_ip", "privateIp") ?? "—",
+    region: pickString(record, "region") ?? "—",
+    serverRole: pickString(record, "server_role", "serverRole") ?? "—",
+    monitoringEnabled:
+      pickBoolean(record, "monitoring_enabled", "monitoringEnabled") ?? false,
+    sizeSlug: pickString(record, "size_slug", "sizeSlug") ?? "—",
+    vcpus: pickNumber(record, "vcpus") ?? null,
+    memoryMb: pickNumber(record, "memory_mb", "memoryMb") ?? null,
+    diskGb: pickNumber(record, "disk_gb", "diskGb") ?? null,
+    lastInfraCheckAt: pickTimestamp(
+      record,
+      "last_infra_check_at",
+      "lastInfraCheckAt",
+    ),
+    linkedTenants: mapLinkedTenants(linkedRaw),
+    infraLastError: infraLastError && infraLastError.length > 0 ? infraLastError : undefined,
+  };
+}
+
+export function mapOdooInfrastructureServers(body: unknown): InfrastructureServer[] {
+  return unwrapPayload(body)
+    .map((item) => mapOdooInfrastructureServer(item))
+    .filter((server): server is InfrastructureServer => server !== null);
 }
 
 export function mapOdooAuditLogs(body: unknown): AuditLogEntry[] {

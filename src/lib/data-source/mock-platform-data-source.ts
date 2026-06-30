@@ -5,6 +5,10 @@ import {
   getTenantByCode,
   tenants,
 } from "@/data/tenants";
+import {
+  getInfrastructureServerByCode,
+  infrastructureServers,
+} from "@/data/infrastructure";
 import { listOperations } from "@/lib/operation-catalog";
 import { getAllDomains, getAllOperationRuns, getAuditLog } from "@/lib/selectors";
 import { getPlatformSummary } from "@/lib/tenant-status";
@@ -34,6 +38,14 @@ export class MockPlatformDataSource implements PlatformDataSource {
 
   async listAuditLogs() {
     return getAuditLog(tenants);
+  }
+
+  async listInfrastructureServers() {
+    return infrastructureServers;
+  }
+
+  async getInfrastructureServer(code: string) {
+    return getInfrastructureServerByCode(code) ?? null;
   }
 
   async getPlatformSummary() {

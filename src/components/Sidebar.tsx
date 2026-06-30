@@ -39,6 +39,15 @@ function IconDomains({ className }: { className?: string }) {
     </svg>
   );
 }
+function IconInfrastructure({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="2" y="14" width="20" height="7" rx="1.5" />
+      <rect x="5" y="3" width="14" height="8" rx="1.5" />
+      <path d="M8 7h8M8 17h0M12 17h0M16 17h0" />
+    </svg>
+  );
+}
 function IconOperations({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -69,6 +78,7 @@ const NAV: NavItem[] = [
   { href: "/", label: t.nav.dashboard, icon: IconDashboard },
   { href: "/tenants", label: t.nav.tenants, icon: IconTenants },
   { href: "/domains", label: t.nav.domains, icon: IconDomains },
+  { href: "/infrastructure", label: t.nav.infrastructure, icon: IconInfrastructure },
   { href: "/operations", label: t.nav.operations, icon: IconOperations },
   { href: "/audit", label: t.nav.audit, icon: IconAudit },
   { href: "/settings", label: t.nav.settings, icon: IconSettings },

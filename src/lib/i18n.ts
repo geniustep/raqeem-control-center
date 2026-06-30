@@ -8,6 +8,7 @@
 
 import type {
   CheckStatus,
+  InfrastructureSyncStatus,
   LifecycleStageStatus,
   OperationStatus,
   RiskLevel,
@@ -47,6 +48,7 @@ const ar = {
     dashboard: "لوحة المعلومات",
     tenants: "المدارس (Tenants)",
     domains: "النطاقات",
+    infrastructure: "البنية التحتية",
     operations: "العمليات",
     audit: "سجل التدقيق",
     settings: "الإعدادات",
@@ -246,6 +248,46 @@ const ar = {
     subtitle: "سجل زمني لكل تقرير مرحلة وعملية على المنصة",
     empty: "لا توجد سجلات بعد",
   },
+  infrastructure: {
+    title: "سجل البنية التحتية",
+    subtitle: "خوادم المنصة المسجّلة في Odoo — للقراءة فقط",
+    empty: "لا توجد سيرفرات مسجلة بعد",
+    syncNote:
+      "هذه الصفحة تعرض سجل البنية التحتية من Control Center. مزامنة DigitalOcean الحية غير مفعّلة بعد.",
+    columns: {
+      code: "المعرّف",
+      name: "الاسم",
+      provider: "المزوّد",
+      providerStatus: "حالة المزوّد",
+      providerResourceId: "معرّف المورد",
+      infraSyncStatus: "حالة المزامنة",
+      publicIp: "IP عام",
+      privateIp: "IP خاص",
+      region: "المنطقة",
+      serverRole: "الدور",
+      monitoringEnabled: "المراقبة",
+      sizeSlug: "الحجم",
+      vcpus: "vCPUs",
+      memoryMb: "الذاكرة (MB)",
+      diskGb: "القرص (GB)",
+      lastInfraCheckAt: "آخر فحص",
+      linkedTenantsApp: "مدارس (تطبيق)",
+      linkedTenantsData: "مدارس (بيانات)",
+      infraLastError: "آخر خطأ",
+    },
+    notSyncedYet: "غير متزامن بعد",
+    unavailable: "غير متوفر",
+    linkedNone: "—",
+    syncStatus: {
+      synced: "متزامن",
+      skipped: "تم التخطّي",
+      never: "لم تُجرَ",
+      pending: "قيد الانتظار",
+      error: "خطأ",
+      stale: "قديم",
+      local: "محلي",
+    } satisfies Record<InfrastructureSyncStatus, string>,
+  },
   auth: {
     loginTitle: "تسجيل الدخول",
     loginSubtitle: "وصول مشغّل المنصة إلى مركز التحكّم",
@@ -349,6 +391,8 @@ export const tLifecycleStatus = (s: LifecycleStageStatus): string =>
 export const tOperationStatus = (s: OperationStatus): string =>
   t.status.operation[s];
 export const tRisk = (s: RiskLevel): string => t.status.risk[s];
+export const tInfraSync = (s: InfrastructureSyncStatus): string =>
+  t.infrastructure.syncStatus[s];
 export const tStage = (s: TenantLifecycleStage): string => t.lifecycleStage[s];
 
 export const HEALTH_CHECK_DISPLAY_ORDER: TenantHealthCheckKey[] = [

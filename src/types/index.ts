@@ -63,6 +63,46 @@ export type TenantOverallStatus =
 /** Risk classification used by the operation catalog and audit logs. */
 export type RiskLevel = "low" | "medium" | "high";
 
+/** DigitalOcean / provider sync state for an infrastructure server record. */
+export type InfrastructureSyncStatus =
+  | "synced"
+  | "skipped"
+  | "never"
+  | "pending"
+  | "error"
+  | "stale"
+  | "local";
+
+/** Tenants linked to a server by role (app host vs data host). */
+export interface LinkedTenants {
+  app: string[];
+  data: string[];
+}
+
+/** A registered infrastructure server from the Odoo platform registry. */
+export interface InfrastructureServer {
+  code: string;
+  name: string;
+  provider: string;
+  providerStatus: string;
+  /** Provider droplet/resource id — empty when not yet synced. */
+  providerResourceId: string | null;
+  infraSyncStatus: InfrastructureSyncStatus;
+  publicIp: string;
+  privateIp: string;
+  region: string;
+  serverRole: string;
+  monitoringEnabled: boolean;
+  sizeSlug: string;
+  vcpus: number | null;
+  memoryMb: number | null;
+  diskGb: number | null;
+  lastInfraCheckAt?: string;
+  linkedTenants: LinkedTenants;
+  /** Sanitized operator-facing error — never raw secrets or long dumps. */
+  infraLastError?: string;
+}
+
 /** Branding (logo / colors / slogan) is managed inside the school app itself. */
 export type BrandingStatus = "missing" | "configured";
 

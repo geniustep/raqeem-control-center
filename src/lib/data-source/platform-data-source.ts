@@ -116,6 +116,10 @@ export async function loadAuditLogs() {
   return withFallback((source) => source.listAuditLogs());
 }
 
+export async function loadInfrastructure() {
+  return withFallback((source) => source.listInfrastructureServers());
+}
+
 export async function loadPlatformSummary() {
   return withFallback((source) => source.getPlatformSummary());
 }
