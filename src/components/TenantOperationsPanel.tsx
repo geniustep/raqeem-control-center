@@ -63,6 +63,7 @@ export function TenantOperationsPanel({ tenant }: { tenant: Tenant }) {
         <OperationDialog
           operation={open}
           status={openStatus}
+          tenant={tenant}
           externalUrl={externalUrl}
           onClose={() => setOpenType(null)}
         />

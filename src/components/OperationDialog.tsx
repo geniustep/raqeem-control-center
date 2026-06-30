@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { OperationStatus, TenantOperation } from "@/types";
+import type { DryRunReport } from "@/lib/operations-dry-run";
+import { buildDryRunReport } from "@/lib/operations-dry-run";
+import type { OperationStatus, Tenant, TenantOperation } from "@/types";
 import { OperationBadge } from "@/components/StatusBadge";
 import { RiskBadge } from "@/components/HealthBadge";
 import { WarningCallout } from "@/components/WarningCallout";
-import { t } from "@/lib/i18n";
+import { formatDateTime } from "@/lib/format";
+import { t, tOperationStatus } from "@/lib/i18n";
 
 function Section({
   title,
@@ -34,20 +37,66 @@ function Section({
   );
 }
 
+const PREFLIGHT_TONE: Record<
+  DryRunReport["preflightChecks"][number]["status"],
+  string
+> = {
+  pass: "text-emerald-600",
+  fail: "text-red-600",
+  warning: "text-amber-600",
+  skipped: "text-slate-400",
+};
+
+function DryRunReportPanel({ report }: { report: DryRunReport }) {
+  const D = t.operations.dialog;
+  return (
+    <div className="space-y-3 rounded-lg border border-brand-200 bg-brand-50/50 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-xs font-semibold text-brand-900">{D.dryRunReport}</div>
+        <span className="font-mono text-[10px] text-slate-400" dir="ltr">
+          {formatDateTime(report.generatedAt)}
+        </span>
+      </div>
+      <p className="text-sm text-slate-700">{report.summary}</p>
+      <div>
+        <div className="mb-1.5 text-xs font-semibold text-slate-700">{D.preflightResults}</div>
+        <ul className="space-y-1">
+          {report.preflightChecks.map((check) => (
+            <li
+              key={check.label}
+              className={`flex items-start gap-2 text-sm ${PREFLIGHT_TONE[check.status]}`}
+            >
+              <span className="mt-0.5 shrink-0">•</span>
+              <span className="min-w-0">{check.label}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <Section title={D.theoreticalSteps} items={report.theoreticalSteps} tone="emerald" />
+      <WarningCallout variant="info" title={t.operations.interactive.simulationOnly}>
+        {D.reportFooter}
+      </WarningCallout>
+    </div>
+  );
+}
+
 /** Modal describing an operation's pre-checks and expected steps (dry-run). */
 export function OperationDialog({
   operation,
   status,
+  tenant,
   externalUrl,
   onClose,
 }: {
   operation: TenantOperation;
   status: OperationStatus;
+  tenant?: Tenant;
   externalUrl?: string;
   onClose: () => void;
 }) {
-  const [simulated, setSimulated] = useState(false);
+  const [report, setReport] = useState<DryRunReport | null>(null);
   const D = t.operations.dialog;
+  const I = t.operations.interactive;
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -57,7 +106,15 @@ export function OperationDialog({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const canSimulate = status === "available";
+  const canSimulate = status === "available" || status === "manual_required" || status === "completed";
+
+  function handleSimulate() {
+    if (tenant) {
+      setReport(buildDryRunReport(tenant, operation.type));
+    } else {
+      setReport(null);
+    }
+  }
 
   return (
     <div
@@ -93,9 +150,27 @@ export function OperationDialog({
         </div>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+          <WarningCallout variant="warning" title={I.simulationOnly}>
+            <p>{I.noRealExecution}</p>
+            <p className="mt-1">{I.previewPhaseOnly}</p>
+          </WarningCallout>
+
+          {tenant ? (
+            <div className="rounded-lg bg-slate-50 px-3 py-2 ring-1 ring-inset ring-slate-100">
+              <div className="text-xs font-medium text-slate-500">{I.targetTenant}</div>
+              <div className="mt-0.5 text-sm font-semibold text-slate-800">{tenant.name}</div>
+              <div className="font-mono text-xs text-slate-500" dir="ltr">{tenant.code}</div>
+            </div>
+          ) : null}
+
           <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 ring-1 ring-inset ring-slate-100">
             <span className="text-xs font-medium text-slate-500">{D.risk}</span>
             <RiskBadge risk={operation.riskLevel} />
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 ring-1 ring-inset ring-slate-100">
+            <span className="text-xs font-medium text-slate-500">{D.operationStatus}</span>
+            <span className="text-sm font-medium text-slate-700">{tOperationStatus(status)}</span>
           </div>
 
           <Section title={D.preChecks} items={operation.preconditions} />
@@ -114,9 +189,7 @@ export function OperationDialog({
             </WarningCallout>
           ) : null}
 
-          {simulated ? (
-            <WarningCallout variant="info">{D.simulatedDone}</WarningCallout>
-          ) : null}
+          {report ? <DryRunReportPanel report={report} /> : null}
         </div>
 
         <div className="flex items-center justify-end gap-2 border-t border-slate-100 p-4">
@@ -140,11 +213,11 @@ export function OperationDialog({
           ) : (
             <button
               type="button"
-              disabled={!canSimulate}
-              onClick={() => setSimulated(true)}
+              disabled={!canSimulate || !!report}
+              onClick={handleSimulate}
               className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
             >
-              {D.simulate}
+              {report ? I.simulationDone : I.simulationOnly}
             </button>
           )}
         </div>
