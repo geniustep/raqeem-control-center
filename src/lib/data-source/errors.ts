@@ -1,5 +1,7 @@
 import "server-only";
 
+import type { DataSourceErrorInfo } from "@/lib/data-source/types";
+
 export class OdooApiError extends Error {
   readonly status: number;
   readonly path: string;
@@ -20,4 +22,13 @@ export class OdooConnectionError extends Error {
     this.name = "OdooConnectionError";
     this.cause = cause;
   }
+}
+
+/** Safe operator-facing error — never includes tokens, URLs, or raw exception text. */
+export function toPublicDataSourceError(): DataSourceErrorInfo {
+  return { code: "odoo_unavailable" };
+}
+
+export function odooMisconfiguredError(): DataSourceErrorInfo {
+  return { code: "odoo_misconfigured" };
 }

@@ -13,6 +13,7 @@ import { TenantHealthPanel } from "@/components/TenantHealthPanel";
 import { TenantOperationsPanel } from "@/components/TenantOperationsPanel";
 import { AuditTimeline } from "@/components/AuditTimeline";
 import { DataSourceBanner } from "@/components/DataSourceBanner";
+import { DataSourceErrorState } from "@/components/DataSourceErrorState";
 import { loadTenant, getStaticTenantCodes } from "@/lib/data-source/platform-data-source";
 import { getAuditLog } from "@/lib/selectors";
 import {
@@ -35,7 +36,23 @@ export default async function TenantDetailPage({
   params: Promise<{ code: string }>;
 }) {
   const { code } = await params;
-  const { data: tenant, meta } = await loadTenant(code);
+  const { data: tenant, meta, error } = await loadTenant(code);
+
+  if (error) {
+    return (
+      <div>
+        <div className="mb-6 text-xs text-slate-500">
+          <Link href="/tenants" className="hover:underline">
+            {t.tenants.title}
+          </Link>
+          <span className="px-1">/</span>
+          <span className="font-mono" dir="ltr">{code}</span>
+        </div>
+        <DataSourceErrorState error={error} />
+      </div>
+    );
+  }
+
   if (!tenant) notFound();
 
   const status = deriveTenantOverallStatus(tenant);

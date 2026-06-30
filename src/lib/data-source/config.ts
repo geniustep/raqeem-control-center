@@ -33,6 +33,14 @@ export function isOdooDataSource(): boolean {
   return getDataSourceConfig().source === "odoo";
 }
 
+/** Production with Odoo configured — no silent mock fallback on API failure. */
+export function isProductionStrictOdoo(): boolean {
+  return (
+    process.env.NODE_ENV === "production" &&
+    getDataSourceConfig().source === "odoo"
+  );
+}
+
 /** Safe subset for the settings page — no secrets, no full URL. */
 export interface PublicDataSourceInfo {
   configuredSource: ControlCenterDataSource;

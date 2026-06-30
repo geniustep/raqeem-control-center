@@ -6,12 +6,23 @@ import { Card, CardBody, CardHeader } from "@/components/Card";
 import { HealthBadge } from "@/components/HealthBadge";
 import { EmptyState } from "@/components/EmptyState";
 import { DataSourceBanner } from "@/components/DataSourceBanner";
+import { DataSourceErrorState } from "@/components/DataSourceErrorState";
 import { loadDashboardData } from "@/lib/data-source/platform-data-source";
 import { formatDateTime } from "@/lib/format";
 import { t } from "@/lib/i18n";
 
 export default async function DashboardPage() {
-  const { data, meta } = await loadDashboardData();
+  const result = await loadDashboardData();
+  if (result.error) {
+    return (
+      <div>
+        <PageHeader title={t.dashboard.title} subtitle={t.dashboard.subtitle} />
+        <DataSourceErrorState error={result.error} />
+      </div>
+    );
+  }
+
+  const { data, meta } = result;
   const { summary, needsAttention, recentRuns: recent } = data;
   const M = t.dashboard.metrics;
 

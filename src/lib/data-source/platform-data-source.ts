@@ -1,7 +1,11 @@
 import "server-only";
 
 import { unstable_noStore as noStore } from "next/cache";
-import { getDataSourceConfig } from "@/lib/data-source/config";
+import { getDataSourceConfig, isProductionStrictOdoo } from "@/lib/data-source/config";
+import {
+  odooMisconfiguredError,
+  toPublicDataSourceError,
+} from "@/lib/data-source/errors";
 import {
   getMockTenantCodes,
   MockPlatformDataSource,
@@ -53,6 +57,14 @@ async function withFallback<T>(
   }
 
   if (!config.isApiConfigured) {
+    if (isProductionStrictOdoo()) {
+      return {
+        data: null,
+        meta: buildMeta("odoo", false),
+        error: odooMisconfiguredError(),
+      };
+    }
+
     const mock = new MockPlatformDataSource();
     return {
       data: await loader(mock),
@@ -68,6 +80,14 @@ async function withFallback<T>(
   try {
     return { data: await loader(odoo), meta: buildMeta("odoo", false) };
   } catch {
+    if (isProductionStrictOdoo()) {
+      return {
+        data: null,
+        meta: buildMeta("odoo", false),
+        error: toPublicDataSourceError(),
+      };
+    }
+
     const mock = new MockPlatformDataSource();
     return { data: await loader(mock), meta: buildMeta("mock", true) };
   }

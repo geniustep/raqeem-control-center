@@ -10,6 +10,13 @@ import type {
   TenantOperationRun,
 } from "@/types";
 
+export type DataSourceErrorCode = "odoo_unavailable" | "odoo_misconfigured";
+
+/** Operator-safe error — no secrets or internal URLs. */
+export interface DataSourceErrorInfo {
+  code: DataSourceErrorCode;
+}
+
 /** Metadata about which data source was actually used for a request. */
 export interface DataSourceMeta {
   configuredSource: ControlCenterDataSource;
@@ -19,10 +26,21 @@ export interface DataSourceMeta {
   warning?: string;
 }
 
-export interface DataSourceResult<T> {
+export interface DataSourceResultSuccess<T> {
   data: T;
   meta: DataSourceMeta;
+  error?: undefined;
 }
+
+export interface DataSourceResultFailure {
+  data: null;
+  meta: DataSourceMeta;
+  error: DataSourceErrorInfo;
+}
+
+export type DataSourceResult<T> =
+  | DataSourceResultSuccess<T>
+  | DataSourceResultFailure;
 
 export interface PlatformDataSource {
   listTenants(): Promise<Tenant[]>;

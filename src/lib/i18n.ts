@@ -226,6 +226,15 @@ const ar = {
     securityNote:
       "لا أسرار، لا كلمات مرور، لا مفاتيح خاصة. كل العمليات للقراءة/المحاكاة فقط دون تنفيذ فعلي على الخوادم.",
   },
+  dataSource: {
+    unavailableTitle: "مصدر بيانات Odoo غير متاح",
+    unavailableDescription:
+      "تعذّر الاتصال بمصدر بيانات Odoo. تحقّق من حالة المنصة أو أعد المحاولة لاحقًا.",
+    misconfiguredTitle: "مصدر بيانات Odoo غير مهيّأ",
+    misconfiguredDescription:
+      "مصدر البيانات مضبوط على Odoo لكن إعدادات الاتصال غير مكتملة. راجع متغيرات البيئة على الخادم.",
+    operatorHint: "لا تُعرض بيانات بديلة (mock) في بيئة الإنتاج.",
+  },
   status: {
     overall: {
       draft: "مسودّة",

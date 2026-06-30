@@ -1,6 +1,9 @@
 import "server-only";
 
-import type { DataSourceConfig } from "@/lib/data-source/config";
+import {
+  type DataSourceConfig,
+  isProductionStrictOdoo,
+} from "@/lib/data-source/config";
 import { OdooApiError, OdooConnectionError } from "@/lib/data-source/errors";
 import {
   mapOdooAuditLogs,
@@ -101,40 +104,53 @@ export class OdooPlatformDataSource implements PlatformDataSource {
   }
 
   async listOperations() {
+    const strict = isProductionStrictOdoo();
+
     try {
       const body = await this.getJson("/api/v1/platform/operations");
       const catalog = mapOdooOperations(body);
       if (catalog.length > 0) return catalog;
+      if (strict) return [];
+
       const runs = mapOdooOperationRuns(body);
       if (runs.length > 0) {
         return listOperations();
       }
-    } catch {
-      // Fall through to static catalog below.
+    } catch (error) {
+      if (strict) throw error;
     }
+
     return listOperations();
   }
 
   async listOperationRuns() {
+    const strict = isProductionStrictOdoo();
+
     try {
       const body = await this.getJson("/api/v1/platform/operations");
       const runs = mapOdooOperationRuns(body);
       if (runs.length > 0) return runs;
-    } catch {
-      // Fall through to tenant-derived runs.
+      if (strict) return [];
+    } catch (error) {
+      if (strict) throw error;
     }
+
     const tenantList = await this.listTenants();
     return getAllOperationRuns(tenantList);
   }
 
   async listAuditLogs() {
+    const strict = isProductionStrictOdoo();
+
     try {
       const body = await this.getJson("/api/v1/platform/audit");
       const mapped = mapOdooAuditLogs(body);
       if (mapped.length > 0) return mapped;
-    } catch {
-      // Fall through to tenant-derived audit.
+      if (strict) return [];
+    } catch (error) {
+      if (strict) throw error;
     }
+
     const tenantList = await this.listTenants();
     return getAuditLog(tenantList);
   }

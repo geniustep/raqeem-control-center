@@ -3,7 +3,12 @@ import { getPublicDataSourceInfo } from "@/lib/data-source/config";
 import { mapOdooTenant } from "@/lib/data-source/mappers";
 import { MockPlatformDataSource } from "@/lib/data-source/mock-platform-data-source";
 import { OdooPlatformDataSource } from "@/lib/data-source/odoo-platform-data-source";
-import { loadTenants } from "@/lib/data-source/platform-data-source";
+import {
+  loadAuditLogs,
+  loadOperationsPageData,
+  loadTenants,
+} from "@/lib/data-source/platform-data-source";
+import { listOperations } from "@/lib/operation-catalog";
 import { tenants as mockTenants } from "@/data/tenants";
 
 const ENV_KEYS = [
@@ -44,11 +49,12 @@ describe("data source config", () => {
   });
 
   it("defaults to mock when CONTROL_CENTER_DATA_SOURCE is unset", async () => {
-    const { data, meta } = await loadTenants();
-    expect(meta.configuredSource).toBe("mock");
-    expect(meta.effectiveSource).toBe("mock");
-    expect(meta.usedFallback).toBe(false);
-    expect(data).toHaveLength(mockTenants.length);
+    const result = await loadTenants();
+    expect(result.error).toBeUndefined();
+    expect(result.meta.configuredSource).toBe("mock");
+    expect(result.meta.effectiveSource).toBe("mock");
+    expect(result.meta.usedFallback).toBe(false);
+    expect(result.data).toHaveLength(mockTenants.length);
   });
 
   it("uses mock adapter when CONTROL_CENTER_DATA_SOURCE=mock", async () => {
@@ -151,17 +157,76 @@ describe("Odoo adapter", () => {
     expect(list[0].code).toBe("demo");
   });
 
-  it("falls back to mock when Odoo API is unreachable", async () => {
+  it("loads Odoo data when API succeeds via platform loader", async () => {
     process.env.CONTROL_CENTER_DATA_SOURCE = "odoo";
     process.env.RAQEEM_PLATFORM_API_BASE_URL = "http://odoo.test";
+    process.env.RAQEEM_PLATFORM_API_TOKEN = "test-token";
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          data: [{ code: "demo", name: "Demo School", overall_status: "live" }],
+        }),
+      }),
+    );
+
+    const result = await loadTenants();
+    expect(result.error).toBeUndefined();
+    if (result.error) return;
+    expect(result.meta.effectiveSource).toBe("odoo");
+    expect(result.meta.usedFallback).toBe(false);
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0].code).toBe("demo");
+  });
+
+  it("falls back to mock when Odoo API is unreachable outside production", async () => {
+    process.env.CONTROL_CENTER_DATA_SOURCE = "odoo";
+    process.env.RAQEEM_PLATFORM_API_BASE_URL = "http://odoo.test";
+    vi.stubEnv("NODE_ENV", "development");
 
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("ECONNREFUSED")));
 
-    const { data, meta } = await loadTenants();
-    expect(meta.usedFallback).toBe(true);
-    expect(meta.effectiveSource).toBe("mock");
-    expect(meta.configuredSource).toBe("odoo");
-    expect(data).toHaveLength(mockTenants.length);
+    const result = await loadTenants();
+    expect(result.error).toBeUndefined();
+    if (result.error) return;
+    expect(result.meta.usedFallback).toBe(true);
+    expect(result.meta.effectiveSource).toBe("mock");
+    expect(result.meta.configuredSource).toBe("odoo");
+    expect(result.data).toHaveLength(mockTenants.length);
+  });
+
+  it("does not fall back to mock in production when Odoo API fails", async () => {
+    process.env.CONTROL_CENTER_DATA_SOURCE = "odoo";
+    process.env.RAQEEM_PLATFORM_API_BASE_URL = "http://127.0.0.1:8094";
+    process.env.RAQEEM_PLATFORM_API_TOKEN = "super-secret-token";
+    vi.stubEnv("NODE_ENV", "production");
+
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("ECONNREFUSED")));
+
+    const result = await loadTenants();
+    expect(result.error).toEqual({ code: "odoo_unavailable" });
+    expect(result.data).toBeNull();
+    expect(result.meta.usedFallback).toBe(false);
+    expect(result.meta.effectiveSource).toBe("odoo");
+    expect(result.meta.configuredSource).toBe("odoo");
+
+    const serialized = JSON.stringify(result);
+    expect(serialized).not.toContain("super-secret");
+    expect(serialized).not.toContain("8094");
+    expect(serialized).not.toContain("ECONNREFUSED");
+  });
+
+  it("returns misconfigured error in production when Odoo API URL is missing", async () => {
+    process.env.CONTROL_CENTER_DATA_SOURCE = "odoo";
+    vi.stubEnv("NODE_ENV", "production");
+    delete process.env.RAQEEM_PLATFORM_API_BASE_URL;
+
+    const result = await loadTenants();
+    expect(result.error).toEqual({ code: "odoo_misconfigured" });
+    expect(result.data).toBeNull();
+    expect(result.meta.usedFallback).toBe(false);
   });
 
   it("does not use POST/PATCH/DELETE in fetch calls", async () => {
@@ -187,5 +252,109 @@ describe("Odoo adapter", () => {
     for (const call of fetchMock.mock.calls) {
       expect(call[1]?.method ?? "GET").toBe("GET");
     }
+  });
+
+  it("does not use static catalog fallback in production when operations endpoint fails", async () => {
+    process.env.CONTROL_CENTER_DATA_SOURCE = "odoo";
+    process.env.RAQEEM_PLATFORM_API_BASE_URL = "http://127.0.0.1:8094";
+    process.env.RAQEEM_PLATFORM_API_TOKEN = "super-secret-token";
+    vi.stubEnv("NODE_ENV", "production");
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((url: string) => {
+        if (String(url).includes("/operations")) {
+          return Promise.reject(new Error("ECONNREFUSED"));
+        }
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ data: [] }),
+        });
+      }),
+    );
+
+    const result = await loadOperationsPageData();
+    expect(result.error).toEqual({ code: "odoo_unavailable" });
+    expect(result.data).toBeNull();
+
+    const serialized = JSON.stringify(result);
+    expect(serialized).not.toContain("super-secret");
+    expect(serialized).not.toContain("8094");
+    expect(serialized).not.toContain("ECONNREFUSED");
+  });
+
+  it("does not use tenant-derived fallback in production when audit endpoint fails", async () => {
+    process.env.CONTROL_CENTER_DATA_SOURCE = "odoo";
+    process.env.RAQEEM_PLATFORM_API_BASE_URL = "http://127.0.0.1:8094";
+    process.env.RAQEEM_PLATFORM_API_TOKEN = "super-secret-token";
+    vi.stubEnv("NODE_ENV", "production");
+
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (String(url).includes("/audit")) {
+        return Promise.reject(new Error("ECONNREFUSED"));
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          data: [{ code: "demo", name: "Demo School", overall_status: "live" }],
+        }),
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await loadAuditLogs();
+    expect(result.error).toEqual({ code: "odoo_unavailable" });
+    expect(result.data).toBeNull();
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/tenants"))).toBe(
+      false,
+    );
+
+    const serialized = JSON.stringify(result);
+    expect(serialized).not.toContain("super-secret");
+    expect(serialized).not.toContain("8094");
+    expect(serialized).not.toContain("ECONNREFUSED");
+  });
+
+  it("keeps static catalog fallback in development when operations endpoint fails", async () => {
+    process.env.CONTROL_CENTER_DATA_SOURCE = "odoo";
+    process.env.RAQEEM_PLATFORM_API_BASE_URL = "http://odoo.test";
+    vi.stubEnv("NODE_ENV", "development");
+
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("ECONNREFUSED")));
+
+    const odoo = new OdooPlatformDataSource({
+      apiBaseUrl: "http://odoo.test",
+      apiToken: "",
+    });
+    const catalog = await odoo.listOperations();
+    expect(catalog).toEqual(listOperations());
+  });
+
+  it("keeps tenant-derived audit fallback in development when audit endpoint fails", async () => {
+    process.env.CONTROL_CENTER_DATA_SOURCE = "odoo";
+    process.env.RAQEEM_PLATFORM_API_BASE_URL = "http://odoo.test";
+    vi.stubEnv("NODE_ENV", "development");
+
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (String(url).includes("/audit")) {
+        return Promise.reject(new Error("ECONNREFUSED"));
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          data: [{ code: "demo", name: "Demo School", overall_status: "live" }],
+        }),
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const odoo = new OdooPlatformDataSource({
+      apiBaseUrl: "http://odoo.test",
+      apiToken: "",
+    });
+    await expect(odoo.listAuditLogs()).resolves.toEqual(expect.any(Array));
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/tenants"))).toBe(
+      true,
+    );
   });
 });

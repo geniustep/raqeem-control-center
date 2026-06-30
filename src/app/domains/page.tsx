@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { HealthBadge } from "@/components/HealthBadge";
 import { Pill } from "@/components/Pill";
 import { DataSourceBanner } from "@/components/DataSourceBanner";
+import { DataSourceErrorState } from "@/components/DataSourceErrorState";
 import { loadDomains } from "@/lib/data-source/platform-data-source";
 import { t } from "@/lib/i18n";
 
@@ -19,7 +20,20 @@ const TH = "px-3 py-2.5 text-right text-xs font-semibold text-slate-500 whitespa
 const TD = "px-3 py-3 text-sm text-slate-700 whitespace-nowrap";
 
 export default async function DomainsPage() {
-  const { data: domains, meta } = await loadDomains();
+  const result = await loadDomains();
+  if (result.error) {
+    return (
+      <div>
+        <PageHeader
+          title={t.nav.domains}
+          subtitle="كل النطاقات (API والواجهة) عبر المدارس وحالتها"
+        />
+        <DataSourceErrorState error={result.error} />
+      </div>
+    );
+  }
+
+  const { data: domains, meta } = result;
 
   return (
     <div>
