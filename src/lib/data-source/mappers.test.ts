@@ -7,7 +7,7 @@ import {
   mapOdooTenantsResponse,
 } from "@/lib/data-source/mappers";
 import { formatOptionalDateTime } from "@/lib/format";
-import { tCheck } from "@/lib/i18n";
+import { t, tCheck } from "@/lib/i18n";
 import { getPlatformSummary } from "@/lib/tenant-status";
 
 describe("mapOdooAuditEntry", () => {
@@ -185,5 +185,19 @@ describe("isCheckExplicitFailure", () => {
     expect(tenant!.healthChecks[0].status).toBe("not_configured");
     expect(isCheckExplicitFailure(tenant!.healthChecks[0].status)).toBe(false);
     expect(tCheck(tenant!.healthChecks[0].status)).toBe("غير مُعدّ");
+  });
+});
+
+describe("dashboard warning metric label", () => {
+  it("keeps warning_count value but uses a label that is not school-count wording", () => {
+    const summary = mapOdooDashboardAggregate({
+      tenant_count: 4,
+      warning_count: 9,
+    });
+
+    expect(summary!.totalTenants).toBe(4);
+    expect(summary!.tenantsWithWarnings).toBe(9);
+    expect(t.dashboard.metrics.tenantsWithWarnings).toBe("تنبيهات صحية");
+    expect(t.dashboard.metrics.tenantsWithWarnings).not.toMatch(/مدارس/);
   });
 });

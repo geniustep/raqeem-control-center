@@ -108,7 +108,7 @@ const ar = {
       "بعض فحوص الصحة تُجرى محليًا (local-only) وقد تظهر بحالة «غير معروف» عندما لا تتوفر بيانات السجل (registry). الحالات «غير معروف» و«غير مُعدّ» لا تُعدّ فشلًا صريحًا.",
     metrics: {
       totalTenants: "إجمالي المدارس",
-      tenantsWithWarnings: "مدارس بتنبيهات",
+      tenantsWithWarnings: "تنبيهات صحية",
       criticalCount: "حالات حرجة",
       sslReady: "SSL جاهز",
       proxyReady: "Proxy جاهز",
