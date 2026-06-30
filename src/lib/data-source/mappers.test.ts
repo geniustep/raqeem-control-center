@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { mapOdooAuditEntry, mapOdooTenant } from "@/lib/data-source/mappers";
+import {
+  isCheckExplicitFailure,
+  mapOdooAuditEntry,
+  mapOdooDashboardAggregate,
+  mapOdooTenant,
+  mapOdooTenantsResponse,
+} from "@/lib/data-source/mappers";
 import { formatOptionalDateTime } from "@/lib/format";
 import { tCheck } from "@/lib/i18n";
+import { getPlatformSummary } from "@/lib/tenant-status";
 
 describe("mapOdooAuditEntry", () => {
   it("maps result=recorded without falling back to unknown", () => {
@@ -75,5 +82,108 @@ describe("mapOperationRun via mapOdooTenant", () => {
     expect(run.finishedAt).toBeUndefined();
     expect(formatOptionalDateTime(run.finishedAt ?? run.startedAt)).toBe("غير معروف");
     expect(formatOptionalDateTime(run.finishedAt ?? run.startedAt)).not.toContain("1970");
+  });
+});
+
+describe("mapOdooDashboardAggregate", () => {
+  it("maps snake_case dashboard counts from /tenants envelope", () => {
+    const summary = mapOdooDashboardAggregate({
+      data: [{ code: "alwah", name: "Alwah" }],
+      tenant_count: 5,
+      live_count: 4,
+      warning_count: 2,
+      critical_count: 1,
+      ssl_ready_count: 5,
+      proxy_ready_count: 4,
+      services_active_count: 5,
+      frontend_ready_count: 4,
+      backend_db_healthy_count: 5,
+    });
+
+    expect(summary).toEqual({
+      totalTenants: 5,
+      tenantsWithWarnings: 2,
+      criticalCount: 1,
+      sslReady: 5,
+      proxyReady: 4,
+      servicesActive: 5,
+      frontendReady: 4,
+      backendDbHealthy: 5,
+      fromOdoo: true,
+    });
+  });
+
+  it("maps nested dashboard object", () => {
+    const summary = mapOdooDashboardAggregate({
+      tenants: [{ code: "demo", name: "Demo" }],
+      dashboard: {
+        tenant_count: 3,
+        warning_count: 1,
+        critical_count: 0,
+        ssl_ready_count: 3,
+        proxy_ready_count: 3,
+        services_active_count: 3,
+        frontend_ready_count: 3,
+        backend_db_healthy_count: 2,
+      },
+    });
+
+    expect(summary?.totalTenants).toBe(3);
+    expect(summary?.backendDbHealthy).toBe(2);
+    expect(summary?.fromOdoo).toBe(true);
+  });
+
+  it("returns null when Odoo sends no dashboard aggregate", () => {
+    expect(mapOdooDashboardAggregate({ data: [{ code: "x", name: "X" }] })).toBeNull();
+    expect(mapOdooDashboardAggregate([{ code: "x", name: "X" }])).toBeNull();
+  });
+});
+
+describe("mapOdooTenantsResponse", () => {
+  it("falls back to local summary when dashboard is absent", () => {
+    const { tenants, dashboard } = mapOdooTenantsResponse({
+      data: [
+        {
+          code: "demo",
+          name: "Demo",
+          ssl: { ready: true },
+          cloudflare: { proxy_enabled: true },
+          odoo: { active: true, enabled: true },
+          frontend: { opens: true },
+          database: { reachable: true },
+        },
+      ],
+    });
+
+    expect(dashboard).toBeNull();
+    expect(tenants).toHaveLength(1);
+    const local = getPlatformSummary(tenants);
+    expect(local.totalTenants).toBe(1);
+    expect(local.sslReady).toBe(1);
+    expect(local.fromOdoo).toBeUndefined();
+  });
+});
+
+describe("isCheckExplicitFailure", () => {
+  it("treats only failed as explicit failure", () => {
+    expect(isCheckExplicitFailure("failed")).toBe(true);
+    expect(isCheckExplicitFailure("unknown")).toBe(false);
+    expect(isCheckExplicitFailure("not_configured")).toBe(false);
+    expect(isCheckExplicitFailure("warning")).toBe(false);
+    expect(isCheckExplicitFailure("pending")).toBe(false);
+    expect(isCheckExplicitFailure("recorded")).toBe(false);
+    expect(isCheckExplicitFailure("passed")).toBe(false);
+  });
+
+  it("maps not_configured check status without coercing to failed", () => {
+    const tenant = mapOdooTenant({
+      code: "demo",
+      name: "Demo",
+      health_checks: [{ id: "local", label: "Registry", status: "not_configured" }],
+    });
+
+    expect(tenant!.healthChecks[0].status).toBe("not_configured");
+    expect(isCheckExplicitFailure(tenant!.healthChecks[0].status)).toBe(false);
+    expect(tCheck(tenant!.healthChecks[0].status)).toBe("غير مُعدّ");
   });
 });

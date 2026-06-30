@@ -104,15 +104,17 @@ const ar = {
     needsAttention: "مدارس تحتاج انتباه",
     allHealthy: "كل المدارس بحالة جيدة",
     recentOperations: "آخر العمليات",
+    healthChecksNote:
+      "بعض فحوص الصحة تُجرى محليًا (local-only) وقد تظهر بحالة «غير معروف» عندما لا تتوفر بيانات السجل (registry). الحالات «غير معروف» و«غير مُعدّ» لا تُعدّ فشلًا صريحًا.",
     metrics: {
       totalTenants: "إجمالي المدارس",
-      tenantsLive: "مدارس مباشرة (Live)",
       tenantsWithWarnings: "مدارس بتنبيهات",
-      backendHealthy: "خوادم خلفية سليمة",
-      proxyEnabled: "Proxy مفعّل",
+      criticalCount: "حالات حرجة",
       sslReady: "SSL جاهز",
+      proxyReady: "Proxy جاهز",
       servicesActive: "خدمات نشطة",
       frontendReady: "واجهات جاهزة",
+      backendDbHealthy: "قواعد خلفية سليمة",
     },
   },
   tenants: {
@@ -268,6 +270,7 @@ const ar = {
       pending: "قيد الانتظار",
       recorded: "محاكاة مسجلة",
       unknown: "غير معروف",
+      not_configured: "غير مُعدّ",
     } satisfies Record<CheckStatus, string>,
     lifecycle: {
       done: "مكتمل",

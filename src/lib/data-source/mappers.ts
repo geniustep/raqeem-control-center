@@ -23,6 +23,7 @@ import type {
   TenantOverallStatus,
   TenantSsl,
   TenantApiHealth,
+  PlatformSummary,
 } from "@/types";
 import { LIFECYCLE_ORDER } from "@/lib/i18n";
 
@@ -35,6 +36,7 @@ const CHECK_STATUSES: CheckStatus[] = [
   "pending",
   "recorded",
   "unknown",
+  "not_configured",
 ];
 const OVERALL_STATUSES: TenantOverallStatus[] = [
   "draft",
@@ -117,6 +119,78 @@ function asRiskLevel(value: unknown, fallback: RiskLevel = "medium"): RiskLevel 
 
 function asBrandingStatus(value: unknown): BrandingStatus {
   return value === "configured" ? "configured" : "missing";
+}
+
+/** True only for an explicit failure — unknown/not_configured are neutral. */
+export function isCheckExplicitFailure(status: CheckStatus | string): boolean {
+  return status === "failed";
+}
+
+type DashboardCountField = Exclude<keyof PlatformSummary, "fromOdoo">;
+
+const DASHBOARD_COUNT_KEYS: Array<[DashboardCountField, string[]]> = [
+  ["totalTenants", ["tenant_count", "tenantCount", "total_tenants", "totalTenants"]],
+  [
+    "tenantsWithWarnings",
+    ["warning_count", "warningCount", "tenants_with_warnings", "tenantsWithWarnings"],
+  ],
+  ["criticalCount", ["critical_count", "criticalCount"]],
+  ["sslReady", ["ssl_ready_count", "sslReadyCount", "ssl_ready", "sslReady"]],
+  ["proxyReady", ["proxy_ready_count", "proxyReadyCount", "proxy_ready", "proxyReady"]],
+  [
+    "servicesActive",
+    ["services_active_count", "servicesActiveCount", "services_active", "servicesActive"],
+  ],
+  [
+    "frontendReady",
+    ["frontend_ready_count", "frontendReadyCount", "frontend_ready", "frontendReady"],
+  ],
+  [
+    "backendDbHealthy",
+    [
+      "backend_db_healthy_count",
+      "backendDbHealthyCount",
+      "backend_db_healthy",
+      "backendDbHealthy",
+    ],
+  ],
+];
+
+function hasDashboardAggregateFields(record: JsonRecord): boolean {
+  return DASHBOARD_COUNT_KEYS.some(([, keys]) => pickNumber(record, ...keys) !== undefined);
+}
+
+function extractDashboardRecord(body: unknown): JsonRecord | null {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return null;
+  const root = body as JsonRecord;
+  for (const key of ["dashboard", "summary", "aggregate", "metrics"]) {
+    const nested = asRecord(root[key]);
+    if (hasDashboardAggregateFields(nested)) return nested;
+  }
+  return hasDashboardAggregateFields(root) ? root : null;
+}
+
+/** Map Odoo dashboard aggregate counts from a /tenants (or /health) envelope. */
+export function mapOdooDashboardAggregate(body: unknown): PlatformSummary | null {
+  const record = extractDashboardRecord(body);
+  if (!record) return null;
+
+  const summary = {} as Record<DashboardCountField, number>;
+  for (const [field, keys] of DASHBOARD_COUNT_KEYS) {
+    summary[field] = pickNumber(record, ...keys) ?? 0;
+  }
+
+  return { ...summary, fromOdoo: true };
+}
+
+export function mapOdooTenantsResponse(body: unknown): {
+  tenants: Tenant[];
+  dashboard: PlatformSummary | null;
+} {
+  return {
+    tenants: mapOdooTenants(body),
+    dashboard: mapOdooDashboardAggregate(body),
+  };
 }
 
 function defaultLifecycle(): LifecycleState[] {

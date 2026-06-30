@@ -7,6 +7,7 @@ import { HealthBadge } from "@/components/HealthBadge";
 import { EmptyState } from "@/components/EmptyState";
 import { DataSourceBanner } from "@/components/DataSourceBanner";
 import { DataSourceErrorState } from "@/components/DataSourceErrorState";
+import { WarningCallout } from "@/components/WarningCallout";
 import { loadDashboardData } from "@/lib/data-source/platform-data-source";
 import { formatOptionalDateTime } from "@/lib/format";
 import { t } from "@/lib/i18n";
@@ -31,15 +32,54 @@ export default async function DashboardPage() {
       <DataSourceBanner meta={meta} />
       <PageHeader title={t.dashboard.title} subtitle={t.dashboard.subtitle} />
 
+      <div className="mb-4">
+        <WarningCallout variant="info">{t.dashboard.healthChecksNote}</WarningCallout>
+      </div>
+
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         <StatCard label={M.totalTenants} value={summary.totalTenants} tone="blue" />
-        <StatCard label={M.tenantsLive} value={summary.tenantsLive} total={summary.totalTenants} tone="green" />
-        <StatCard label={M.tenantsWithWarnings} value={summary.tenantsWithWarnings} total={summary.totalTenants} tone="amber" />
-        <StatCard label={M.backendHealthy} value={summary.backendHealthy} total={summary.totalTenants} tone="green" />
-        <StatCard label={M.proxyEnabled} value={summary.proxyEnabled} total={summary.totalTenants} tone="blue" />
-        <StatCard label={M.sslReady} value={summary.sslReady} total={summary.totalTenants} tone="green" />
-        <StatCard label={M.servicesActive} value={summary.servicesActive} total={summary.totalTenants} tone="green" />
-        <StatCard label={M.frontendReady} value={summary.frontendReady} total={summary.totalTenants} tone="blue" />
+        <StatCard
+          label={M.tenantsWithWarnings}
+          value={summary.tenantsWithWarnings}
+          total={summary.totalTenants}
+          tone="amber"
+        />
+        <StatCard
+          label={M.criticalCount}
+          value={summary.criticalCount}
+          total={summary.totalTenants}
+          tone="red"
+        />
+        <StatCard
+          label={M.sslReady}
+          value={summary.sslReady}
+          total={summary.totalTenants}
+          tone="green"
+        />
+        <StatCard
+          label={M.proxyReady}
+          value={summary.proxyReady}
+          total={summary.totalTenants}
+          tone="blue"
+        />
+        <StatCard
+          label={M.servicesActive}
+          value={summary.servicesActive}
+          total={summary.totalTenants}
+          tone="green"
+        />
+        <StatCard
+          label={M.frontendReady}
+          value={summary.frontendReady}
+          total={summary.totalTenants}
+          tone="blue"
+        />
+        <StatCard
+          label={M.backendDbHealthy}
+          value={summary.backendDbHealthy}
+          total={summary.totalTenants}
+          tone="green"
+        />
       </section>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-5">

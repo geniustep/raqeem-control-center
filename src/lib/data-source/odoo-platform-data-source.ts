@@ -11,7 +11,7 @@ import {
   mapOdooOperationRuns,
   mapOdooOperations,
   mapOdooTenant,
-  mapOdooTenants,
+  mapOdooTenantsResponse,
 } from "@/lib/data-source/mappers";
 import type { PlatformDataSource } from "@/lib/data-source/types";
 import { listOperations } from "@/lib/operation-catalog";
@@ -71,9 +71,14 @@ export class OdooPlatformDataSource implements PlatformDataSource {
     return response.json();
   }
 
-  async listTenants() {
+  async fetchTenantsWithDashboard() {
     const body = await this.getJson("/api/v1/platform/tenants");
-    return mapOdooTenants(body);
+    return mapOdooTenantsResponse(body);
+  }
+
+  async listTenants() {
+    const { tenants } = await this.fetchTenantsWithDashboard();
+    return tenants;
   }
 
   async getTenant(code: string) {
@@ -156,7 +161,7 @@ export class OdooPlatformDataSource implements PlatformDataSource {
   }
 
   async getPlatformSummary() {
-    const tenantList = await this.listTenants();
-    return getPlatformSummary(tenantList);
+    const { tenants, dashboard } = await this.fetchTenantsWithDashboard();
+    return dashboard ?? getPlatformSummary(tenants);
   }
 }

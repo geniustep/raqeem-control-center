@@ -34,7 +34,14 @@ export type LifecycleStageStatus =
   | "pending";
 
 /** Result of a health check or a smoke test. */
-export type CheckStatus = "passed" | "warning" | "failed" | "pending" | "recorded" | "unknown";
+export type CheckStatus =
+  | "passed"
+  | "warning"
+  | "failed"
+  | "pending"
+  | "recorded"
+  | "unknown"
+  | "not_configured";
 
 /** Whether an operation can be run from the control center (Phase 1: simulated). */
 export type OperationStatus =
@@ -279,11 +286,13 @@ export interface Tenant {
 /** Summary metrics rendered on the dashboard. */
 export interface PlatformSummary {
   totalTenants: number;
-  tenantsLive: number;
   tenantsWithWarnings: number;
-  backendHealthy: number;
-  proxyEnabled: number;
+  criticalCount: number;
   sslReady: number;
+  proxyReady: number;
   servicesActive: number;
   frontendReady: number;
+  backendDbHealthy: number;
+  /** True when counts were supplied by Odoo dashboard aggregate. */
+  fromOdoo?: boolean;
 }

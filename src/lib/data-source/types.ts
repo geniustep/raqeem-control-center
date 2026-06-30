@@ -50,4 +50,8 @@ export interface PlatformDataSource {
   listOperationRuns(): Promise<TenantOperationRun[]>;
   listAuditLogs(): Promise<AuditLogEntry[]>;
   getPlatformSummary(): Promise<PlatformSummary>;
+  fetchTenantsWithDashboard?(): Promise<{
+    tenants: Tenant[];
+    dashboard: PlatformSummary | null;
+  }>;
 }

@@ -248,25 +248,22 @@ export function getNextRecommendedActions(tenant: Tenant): OperationType[] {
 // Platform aggregate
 // ---------------------------------------------------------------------------
 
-/** Aggregate dashboard metrics across all tenants. */
+/** Aggregate dashboard metrics across all tenants (local fallback). */
 export function getPlatformSummary(tenants: Tenant[]): PlatformSummary {
   return {
     totalTenants: tenants.length,
-    tenantsLive: tenants.filter((tn) => {
-      const s = deriveTenantOverallStatus(tn);
-      return s === "live" || s === "live_with_warnings";
-    }).length,
     tenantsWithWarnings: tenants.filter(
       (tn) => getTenantWarnings(tn).length > 0,
     ).length,
-    backendHealthy: tenants.filter(
-      (tn) => tn.apiHealth.httpsStatus === 200 && tn.apiHealth.noCloudflareErrors,
+    criticalCount: tenants.filter(
+      (tn) => deriveTenantOverallStatus(tn) === "blocked",
     ).length,
-    proxyEnabled: tenants.filter((tn) => tn.cloudflare.proxyEnabled).length,
     sslReady: tenants.filter((tn) => tn.ssl.ready).length,
+    proxyReady: tenants.filter((tn) => tn.cloudflare.proxyEnabled).length,
     servicesActive: tenants.filter((tn) => tn.odoo.active && tn.odoo.enabled)
       .length,
     frontendReady: tenants.filter((tn) => tn.frontend.opens).length,
+    backendDbHealthy: tenants.filter((tn) => tn.database.reachable === true).length,
   };
 }
 

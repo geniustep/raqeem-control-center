@@ -169,12 +169,12 @@ describe("getPlatformSummary", () => {
   it("aggregates the seed tenants correctly", () => {
     const s = getPlatformSummary(tenants);
     expect(s.totalTenants).toBe(3);
-    expect(s.tenantsLive).toBe(3);
     expect(s.tenantsWithWarnings).toBe(1);
+    expect(s.criticalCount).toBe(0);
     expect(s.sslReady).toBe(3);
-    expect(s.proxyEnabled).toBe(3);
+    expect(s.proxyReady).toBe(3);
     expect(s.servicesActive).toBe(3);
     expect(s.frontendReady).toBe(3);
-    expect(s.backendHealthy).toBe(3);
+    expect(s.backendDbHealthy).toBe(3);
   });
 });

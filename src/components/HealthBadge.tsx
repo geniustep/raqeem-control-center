@@ -9,6 +9,7 @@ const CHECK_TONE: Record<CheckStatus, Tone> = {
   pending: "gray",
   recorded: "green",
   unknown: "gray",
+  not_configured: "gray",
 };
 
 const RISK_TONE: Record<RiskLevel, Tone> = {

@@ -122,14 +122,26 @@ export async function loadPlatformSummary() {
 
 export async function loadDashboardData() {
   return withFallback(async (source) => {
-    const tenants = await source.listTenants();
     const { getPlatformSummary, getTenantsNeedingAttention } = await import(
       "@/lib/tenant-status"
     );
     const { getRecentOperationRuns } = await import("@/lib/selectors");
+
+    let tenants;
+    let summary;
+
+    if (source.fetchTenantsWithDashboard) {
+      const result = await source.fetchTenantsWithDashboard();
+      tenants = result.tenants;
+      summary = result.dashboard ?? getPlatformSummary(tenants);
+    } else {
+      tenants = await source.listTenants();
+      summary = getPlatformSummary(tenants);
+    }
+
     return {
       tenants,
-      summary: getPlatformSummary(tenants),
+      summary,
       needsAttention: getTenantsNeedingAttention(tenants),
       recentRuns: getRecentOperationRuns(6, tenants),
     };
