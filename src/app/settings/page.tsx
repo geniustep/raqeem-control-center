@@ -39,12 +39,21 @@ export default function SettingsPage() {
         <Card>
           <CardHeader title="المصادقة (Auth)" />
           <CardBody className="space-y-3">
-            <WarningCallout variant="info" title="مكان مخصّص للمرحلة القادمة">
-              {t.settings.authPlaceholder}
+            <WarningCallout variant="info" title="مصادقة مشغّل المنصّة">
+              {t.auth.enabledNote}
             </WarningCallout>
-            <div className="rounded-lg border border-dashed border-slate-300 p-4 text-center text-sm text-slate-400">
-              تسجيل الدخول والصلاحيات — قيد التطوير
-            </div>
+            <dl className="grid grid-cols-1 gap-3 text-sm">
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                <dt className="text-slate-500">Session cookie</dt>
+                <dd className="font-mono text-[13px] font-medium text-slate-900" dir="ltr">
+                  HttpOnly · SameSite=Lax
+                </dd>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                <dt className="text-slate-500">Credentials storage</dt>
+                <dd className="font-medium text-slate-900">Vercel env (server-only)</dd>
+              </div>
+            </dl>
           </CardBody>
         </Card>
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { AppShell } from "@/components/AppShell";
+import { ConditionalAppShell } from "@/components/ConditionalAppShell";
 import { dir, t } from "@/lib/i18n";
 
 export const metadata: Metadata = {
@@ -16,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="ar" dir={dir}>
       <body>
-        <AppShell>{children}</AppShell>
+        <ConditionalAppShell>{children}</ConditionalAppShell>
       </body>
     </html>
   );

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { LogoutButton } from "@/components/LogoutButton";
 import { t } from "@/lib/i18n";
 
 type NavItem = {
@@ -113,7 +114,11 @@ export function Sidebar() {
         );
       })}
 
-      <div className="mt-auto rounded-lg bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-500 ring-1 ring-inset ring-slate-200">
+      <div className="mt-auto space-y-1">
+        <LogoutButton />
+      </div>
+
+      <div className="mt-3 rounded-lg bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-500 ring-1 ring-inset ring-slate-200">
         المرحلة الأولى — للقراءة والمحاكاة فقط. لا تُنفَّذ أي عمليات فعلية على
         الخوادم.
       </div>
