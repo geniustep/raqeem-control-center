@@ -14,7 +14,7 @@ import { TenantOperationsPanel } from "@/components/TenantOperationsPanel";
 import { AuditTimeline } from "@/components/AuditTimeline";
 import { DataSourceBanner } from "@/components/DataSourceBanner";
 import { DataSourceErrorState } from "@/components/DataSourceErrorState";
-import { loadTenant, getStaticTenantCodes } from "@/lib/data-source/platform-data-source";
+import { loadTenant, loadInfrastructure, getStaticTenantCodes } from "@/lib/data-source/platform-data-source";
 import { getAuditLog } from "@/lib/selectors";
 import {
   deriveTenantOverallStatus,
@@ -36,7 +36,11 @@ export default async function TenantDetailPage({
   params: Promise<{ code: string }>;
 }) {
   const { code } = await params;
-  const { data: tenant, meta, error } = await loadTenant(code);
+  const [{ data: tenant, meta, error }, infraResult] = await Promise.all([
+    loadTenant(code),
+    loadInfrastructure(),
+  ]);
+  const infrastructureServers = infraResult.data ?? [];
 
   if (error) {
     return (
@@ -129,7 +133,7 @@ export default async function TenantDetailPage({
 
         <div className="space-y-6 lg:col-span-2">
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <TenantInfrastructurePanel tenant={tenant} />
+            <TenantInfrastructurePanel tenant={tenant} servers={infrastructureServers} />
             <TenantDatabasePanel tenant={tenant} />
             <TenantOdooPanel tenant={tenant} />
             <TenantDomainsPanel tenant={tenant} />
