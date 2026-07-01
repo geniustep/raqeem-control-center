@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { BoolBadge } from "@/components/HealthBadge";
+import { InfrastructureSyncNoticeCallout } from "@/components/InfrastructureSyncNoticeCallout";
 import { InfrastructureSyncBadge } from "@/components/InfrastructureSyncBadge";
 import { DataSourceBanner } from "@/components/DataSourceBanner";
 import { DataSourceErrorState } from "@/components/DataSourceErrorState";
 import { EmptyState } from "@/components/EmptyState";
-import { WarningCallout } from "@/components/WarningCallout";
 import { loadInfrastructure } from "@/lib/data-source/platform-data-source";
+import { deriveInfrastructureSyncNotice } from "@/lib/infrastructure-sync-notice";
 import { formatOptionalDateTime } from "@/lib/format";
 import { t } from "@/lib/i18n";
 
@@ -60,6 +61,7 @@ export default async function InfrastructurePage() {
   }
 
   const { data: servers, meta } = result;
+  const syncNotice = deriveInfrastructureSyncNotice(servers);
 
   return (
     <div>
@@ -67,7 +69,7 @@ export default async function InfrastructurePage() {
       <PageHeader title={L.title} subtitle={L.subtitle} />
 
       <div className="mb-4">
-        <WarningCallout variant="info">{L.syncNote}</WarningCallout>
+        <InfrastructureSyncNoticeCallout notice={syncNotice} />
       </div>
 
       {servers.length === 0 ? (

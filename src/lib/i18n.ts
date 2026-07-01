@@ -252,8 +252,18 @@ const ar = {
     title: "سجل البنية التحتية",
     subtitle: "خوادم المنصة المسجّلة في Odoo — للقراءة فقط",
     empty: "لا توجد سيرفرات مسجلة بعد",
-    syncNote:
-      "هذه الصفحة تعرض سجل البنية التحتية من Control Center. مزامنة DigitalOcean الحية غير مفعّلة بعد.",
+    syncNotice: {
+      syncedSuccess:
+        "تمت آخر مزامنة DigitalOcean بنجاح. تُعرض البيانات من سجل Control Center.",
+      lastSyncAt: "آخر وقت مزامنة",
+      disabled: "مزامنة DigitalOcean الحية غير مفعّلة بعد.",
+      pending: "توجد سيرفرات بانتظار المطابقة.",
+      error:
+        "تعذّرت مزامنة بعض السيرفرات. راجع عمود «آخر خطأ» في الجدول للتفاصيل المختصرة.",
+      errorTitle: "تنبيه مزامنة",
+      errorCount: "عدد السيرفرات المتأثرة: {count}",
+      registryOnly: "تُعرض البيانات من سجل Control Center.",
+    },
     columns: {
       code: "المعرّف",
       name: "الاسم",
