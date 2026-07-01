@@ -233,6 +233,40 @@ describe("mapHealthChecks", () => {
     ).toEqual([]);
   });
 
+  it("prefers check_type over record id for probe key", () => {
+    const checks = mapHealthChecks([
+      {
+        id: "row-older",
+        check_type: "registry_completeness",
+        status: "warning",
+        checked_at: "2026-06-01T10:00:00.000Z",
+        notes: "registry gap(s)",
+      },
+      {
+        id: "row-newer",
+        check_type: "registry_completeness",
+        status: "passed",
+        checked_at: "2026-07-01T12:00:00.000Z",
+      },
+    ]);
+
+    expect(checks).toHaveLength(2);
+    expect(checks.every((c) => c.id === "registry_completeness")).toBe(true);
+    expect(checks[1].status).toBe("passed");
+  });
+
+  it("maps created_at when checked_at is absent", () => {
+    const checks = mapHealthChecks([
+      {
+        id: "api",
+        status: "passed",
+        created_at: "2026-07-01T09:30:00.000Z",
+      },
+    ]);
+
+    expect(checks[0].checkedAt).toBe("2026-07-01T09:30:00.000Z");
+  });
+
   it("sanitizes sensitive paths in health check messages", () => {
     const checks = mapHealthChecks([
       {

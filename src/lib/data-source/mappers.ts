@@ -406,7 +406,9 @@ function pickTimestamp(record: JsonRecord, ...keys: string[]): string | undefine
 }
 
 function mapSingleHealthCheck(record: JsonRecord, idFallback: string): TenantHealthCheck {
-  const id = pickString(record, "id", "name", "key", "check") ?? idFallback;
+  const id =
+    pickString(record, "check_type", "checkType", "check", "key", "name", "id") ??
+    idFallback;
   const rawMessage = pickString(
     record,
     "message",
@@ -422,7 +424,14 @@ function mapSingleHealthCheck(record: JsonRecord, idFallback: string): TenantHea
     id,
     label: pickString(record, "label") ?? id,
     status: asCheckStatus(record.status, "unknown"),
-    checkedAt: pickTimestamp(record, "checked_at", "checkedAt"),
+    checkedAt: pickTimestamp(
+      record,
+      "checked_at",
+      "checkedAt",
+      "created_at",
+      "createdAt",
+      "timestamp",
+    ),
     message,
     source: pickString(record, "source"),
     detail: message,
@@ -445,8 +454,8 @@ export function mapHealthChecks(raw: unknown): TenantHealthCheck[] {
   if (Array.isArray(raw)) {
     checks = raw.map((item, index) => {
       const record = asRecord(item);
-      const id = pickString(record, "id", "name", "key", "check") ?? `check-${index}`;
-      return mapSingleHealthCheck(record, id);
+      const idFallback = `check-${index}`;
+      return mapSingleHealthCheck(record, idFallback);
     });
   } else if (typeof raw === "object") {
     checks = Object.entries(asRecord(raw)).map(([key, value]) =>
