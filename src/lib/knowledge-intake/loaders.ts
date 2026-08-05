@@ -1,6 +1,7 @@
 import "server-only";
 
 import { KnowledgeOdooIntakeClient } from "@/lib/knowledge-intake/client";
+import { withIntakeOptionFallbacks } from "@/lib/knowledge-intake/options";
 import { loadReadySessionOrRedirect } from "@/lib/knowledge-read/loaders";
 import type { KnowledgeIntakeQuery } from "@/lib/knowledge-intake/types";
 
@@ -45,13 +46,16 @@ export async function loadIntakeOptions() {
       client.listOptions({ ...input, kind: "proposed-actions" }),
       client.listOptions({ ...input, kind: "policy-decisions" }),
     ]);
+
   return {
     session,
-    sourceTypes,
-    actorTypes,
-    riskLevels,
-    states,
-    proposedActions,
-    policyDecisions,
+    ...withIntakeOptionFallbacks({
+      sourceTypes,
+      actorTypes,
+      riskLevels,
+      states,
+      proposedActions,
+      policyDecisions,
+    }),
   };
 }
