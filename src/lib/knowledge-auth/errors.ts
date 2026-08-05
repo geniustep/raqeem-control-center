@@ -10,6 +10,7 @@ const ARABIC_MESSAGES: Record<KnowledgeAuthErrorCode, string> = {
   interactive_account_required: "يلزم حساب تفاعلي صالح.",
   mfa_required: "يلزم تفعيل التحقق بخطوتين للمتابعة.",
   permission_denied: "ليس لديك صلاحية تنفيذ هذا الإجراء.",
+  item_not_found: "المادة المعرفية غير موجودة.",
   rate_limited: "محاولات كثيرة. حاول لاحقًا.",
   upstream_unavailable: "خدمة المصادقة غير متاحة حاليًا.",
   server_error: "حدث خطأ غير متوقع. حاول لاحقًا.",

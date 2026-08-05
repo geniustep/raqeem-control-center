@@ -38,6 +38,7 @@ export type KnowledgeAuthErrorCode =
   | "interactive_account_required"
   | "mfa_required"
   | "permission_denied"
+  | "item_not_found"
   | "rate_limited"
   | "upstream_unavailable"
   | "server_error"

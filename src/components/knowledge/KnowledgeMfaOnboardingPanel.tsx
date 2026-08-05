@@ -42,7 +42,7 @@ export function KnowledgeMfaOnboardingPanel({
       }
 
       if (envelope.data?.user?.knowledge_access_ready) {
-        router.replace(KNOWLEDGE_AUTH_PATHS.home);
+        router.replace("/knowledge/dashboard");
         router.refresh();
         return;
       }

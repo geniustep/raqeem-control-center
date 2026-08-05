@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
       {
         user: toPublicUser(session),
         redirect_to: session.knowledge_access_ready
-          ? "/knowledge"
+          ? "/knowledge/dashboard"
           : "/knowledge/onboarding/mfa",
       },
       requestId,

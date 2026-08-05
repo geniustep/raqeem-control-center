@@ -5,6 +5,7 @@ import { KnowledgeMfaOnboardingPanel } from "@/components/knowledge/KnowledgeMfa
 import { KNOWLEDGE_AUTH_PATHS } from "@/lib/knowledge-auth/constants";
 import { readKnowledgeSessionFromCookies } from "@/lib/knowledge-auth/cookie-store";
 import { knowledgeAuthCopy as t } from "@/lib/knowledge-auth/i18n";
+import { KNOWLEDGE_UI_PATHS } from "@/lib/knowledge-read/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export default async function KnowledgeMfaOnboardingPage() {
     redirect(KNOWLEDGE_AUTH_PATHS.loginPage);
   }
   if (session.knowledge_access_ready) {
-    redirect(KNOWLEDGE_AUTH_PATHS.home);
+    redirect(KNOWLEDGE_UI_PATHS.dashboard);
   }
 
   return (

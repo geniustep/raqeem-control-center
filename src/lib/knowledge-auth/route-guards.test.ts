@@ -83,10 +83,21 @@ describe("knowledge route guards (middleware)", () => {
       ENCRYPTION_KEY,
     );
     const response = await middleware(
-      requestFor("/knowledge", { [KNOWLEDGE_SESSION_COOKIE_NAME]: token }),
+      requestFor("/knowledge/dashboard", {
+        [KNOWLEDGE_SESSION_COOKIE_NAME]: token,
+      }),
     );
     expect(response.status).toBe(200);
     expect(response.headers.get("location")).toBeNull();
+  });
+
+  it("returns JSON 401 for knowledge read APIs without session", async () => {
+    process.env.RAQEEM_KNOWLEDGE_SESSION_ENCRYPTION_KEY = ENCRYPTION_KEY;
+    const response = await middleware(requestFor("/api/knowledge/dashboard"));
+    expect(response.status).toBe(401);
+    const body = await response.json();
+    expect(body.ok).toBe(false);
+    expect(body.error.code).toBe("authentication_required");
   });
 
   it("does not grant Knowledge access from Platform operator cookie alone", async () => {

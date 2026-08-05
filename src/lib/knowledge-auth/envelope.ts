@@ -76,9 +76,13 @@ export function jsonError(
           ? 403
           : code === "validation_error"
             ? 400
-            : code === "misconfigured" || code === "upstream_unavailable"
-              ? 503
-              : 400);
+            : code === "item_not_found"
+              ? 404
+              : code === "misconfigured" || code === "upstream_unavailable"
+                ? 503
+                : code === "mfa_required"
+                  ? 403
+                  : 400);
 
   const response = NextResponse.json(
     errorEnvelope(code, requestId, init?.meta ?? {}),

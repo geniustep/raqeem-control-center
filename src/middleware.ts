@@ -7,8 +7,10 @@ import {
   safeCallbackUrl,
 } from "@/lib/auth/routes";
 import { verifySessionToken } from "@/lib/auth/session";
-import { KNOWLEDGE_AUTH_PATHS } from "@/lib/knowledge-auth/constants";
-import { KNOWLEDGE_SESSION_COOKIE_NAME } from "@/lib/knowledge-auth/constants";
+import {
+  KNOWLEDGE_AUTH_PATHS,
+  KNOWLEDGE_SESSION_COOKIE_NAME,
+} from "@/lib/knowledge-auth/constants";
 import {
   isKnowledgeAuthApiPath,
   isKnowledgeLoginPath,
@@ -23,6 +25,12 @@ function readPlatformSessionSecret(): string {
 
 function readKnowledgeEncryptionKey(): string {
   return process.env.RAQEEM_KNOWLEDGE_SESSION_ENCRYPTION_KEY?.trim() ?? "";
+}
+
+function isKnowledgeReadApiPath(pathname: string): boolean {
+  return (
+    pathname.startsWith("/api/knowledge/") && !isKnowledgeAuthApiPath(pathname)
+  );
 }
 
 async function hasValidPlatformSession(request: NextRequest): Promise<boolean> {
@@ -40,11 +48,45 @@ async function readKnowledgeSession(request: NextRequest) {
   return decryptKnowledgeSession(token, key);
 }
 
+function jsonAuthError(
+  request: NextRequest,
+  code: "authentication_required" | "mfa_required",
+  status: number,
+) {
+  const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
+  return NextResponse.json(
+    {
+      ok: false,
+      data: null,
+      meta: {},
+      request_id: requestId,
+      error: {
+        code,
+        message:
+          code === "mfa_required"
+            ? "يلزم تفعيل التحقق بخطوتين للمتابعة."
+            : "يلزم تسجيل الدخول للمتابعة.",
+      },
+    },
+    { status, headers: { "X-Request-ID": requestId } },
+  );
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Knowledge auth APIs are public entry points (handlers enforce origin/session).
   if (isKnowledgeAuthApiPath(pathname)) {
+    return NextResponse.next();
+  }
+
+  if (isKnowledgeReadApiPath(pathname)) {
+    const knowledgeSession = await readKnowledgeSession(request);
+    if (!knowledgeSession) {
+      return jsonAuthError(request, "authentication_required", 401);
+    }
+    if (!knowledgeSession.knowledge_access_ready) {
+      return jsonAuthError(request, "mfa_required", 403);
+    }
     return NextResponse.next();
   }
 
@@ -54,7 +96,7 @@ export async function middleware(request: NextRequest) {
     if (isKnowledgeLoginPath(pathname)) {
       if (knowledgeSession?.knowledge_access_ready) {
         return NextResponse.redirect(
-          new URL(KNOWLEDGE_AUTH_PATHS.home, request.url),
+          new URL("/knowledge/dashboard", request.url),
         );
       }
       if (knowledgeSession && !knowledgeSession.knowledge_access_ready) {
@@ -82,7 +124,7 @@ export async function middleware(request: NextRequest) {
 
     if (isKnowledgeMfaOnboardingPath(pathname)) {
       return NextResponse.redirect(
-        new URL(KNOWLEDGE_AUTH_PATHS.home, request.url),
+        new URL("/knowledge/dashboard", request.url),
       );
     }
 
