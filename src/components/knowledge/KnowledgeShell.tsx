@@ -5,12 +5,15 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
 import { KnowledgeLogoutButton } from "@/components/knowledge/KnowledgeLogoutButton";
+import { KNOWLEDGE_INTAKE_UI_PATHS } from "@/lib/knowledge-intake/constants";
+import { knowledgeIntakeCopy } from "@/lib/knowledge-intake/i18n";
 import { KNOWLEDGE_UI_PATHS } from "@/lib/knowledge-read/constants";
 import { knowledgeUiCopy as t } from "@/lib/knowledge-read/i18n";
 
 const NAV = [
   { href: KNOWLEDGE_UI_PATHS.dashboard, label: t.nav.dashboard },
   { href: KNOWLEDGE_UI_PATHS.items, label: t.nav.items },
+  { href: KNOWLEDGE_INTAKE_UI_PATHS.inbox, label: knowledgeIntakeCopy.nav },
   { href: KNOWLEDGE_UI_PATHS.domains, label: t.nav.domains },
   { href: KNOWLEDGE_UI_PATHS.activity, label: t.nav.activity },
 ] as const;
@@ -20,8 +23,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav className="flex flex-col gap-1 p-3" aria-label="قائمة المعرفة">
       {NAV.map((item) => {
-        const active =
-          pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (
           <Link
             key={item.href}
@@ -73,9 +75,7 @@ export function KnowledgeShell({
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 md:hidden">
           <div>
-            <div className="text-sm font-bold text-slate-900">
-              {t.productName}
-            </div>
+            <div className="text-sm font-bold text-slate-900">{t.productName}</div>
             {userName ? (
               <div className="text-xs text-slate-500" dir="auto">
                 {userName}
@@ -94,10 +94,7 @@ export function KnowledgeShell({
         </header>
 
         {open ? (
-          <div
-            id="knowledge-mobile-nav"
-            className="border-b border-slate-200 bg-white md:hidden"
-          >
+          <div id="knowledge-mobile-nav" className="border-b border-slate-200 bg-white md:hidden">
             <NavLinks onNavigate={() => setOpen(false)} />
             <div className="border-t border-slate-100 p-3">
               <KnowledgeLogoutButton className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700" />
