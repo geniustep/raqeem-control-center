@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   mapIntakeDetail,
+  mapIntakeOptions,
   mapIntakePaginationMeta,
   mapIntakeSummary,
 } from "@/lib/knowledge-intake/mappers";
@@ -86,5 +87,25 @@ describe("knowledge intake mappers", () => {
       has_next: true,
       has_previous: true,
     });
+  });
+
+  it("maps the nested options payload returned by Odoo", () => {
+    const mapped = mapIntakeOptions({
+      ok: true,
+      data: {
+        kind: "source-types",
+        options: [
+          { value: "human_ui", label: "human_ui" },
+          { value: "gpt", label: "gpt" },
+        ],
+      },
+      meta: {},
+      error: null,
+    });
+
+    expect(mapped).toEqual([
+      { value: "human_ui", label: "human_ui" },
+      { value: "gpt", label: "gpt" },
+    ]);
   });
 });
