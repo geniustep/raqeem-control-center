@@ -77,8 +77,7 @@ export function deriveKnowledgeAccessReady(input: {
   if (typeof input.knowledge_access_ready === "boolean") {
     return input.knowledge_access_ready;
   }
-  const hasRole =
-    input.roles.length > 0 || input.capabilities.length > 0;
+  const hasRole = input.roles.length > 0 || input.capabilities.length > 0;
   return Boolean(input.mfa_enabled && hasRole);
 }
 
@@ -86,10 +85,10 @@ export function parseOdooKnowledgeUser(
   raw: unknown,
 ): OdooKnowledgeUserSnapshot {
   const record = asRecord(raw) ?? {};
-  const userNode =
-    asRecord(record.user) ??
-    asRecord(record.partner) ??
-    record;
+  const userNode = asRecord(record.user) ?? asRecord(record.partner) ?? record;
+  const mfaNode = asRecord(userNode.mfa) ?? asRecord(record.mfa);
+  const onboardingNode =
+    asRecord(userNode.onboarding) ?? asRecord(record.onboarding);
 
   const userId =
     readNumber(userNode.user_id) ??
@@ -116,11 +115,15 @@ export function parseOdooKnowledgeUser(
       record.capabilities,
   );
   const mfaAvailable = readBoolean(
-    userNode.mfa_available ?? record.mfa_available,
+    userNode.mfa_available ??
+      mfaNode?.available ??
+      record.mfa_available,
     true,
   );
   const mfaEnabled = readBoolean(
-    userNode.mfa_enabled ?? record.mfa_enabled,
+    userNode.mfa_enabled ??
+      mfaNode?.enabled ??
+      record.mfa_enabled,
     false,
   );
   const active = readBoolean(userNode.active ?? record.active, true);
@@ -131,7 +134,10 @@ export function parseOdooKnowledgeUser(
     true,
   );
 
-  const readyRaw = userNode.knowledge_access_ready ?? record.knowledge_access_ready;
+  const readyRaw =
+    userNode.knowledge_access_ready ??
+    onboardingNode?.knowledge_access_ready ??
+    record.knowledge_access_ready;
   const knowledgeAccessReady = deriveKnowledgeAccessReady({
     mfa_enabled: mfaEnabled,
     roles,
@@ -175,7 +181,6 @@ function extractUpstreamSessionMaterial(
 
   const setCookie = response.headers.getSetCookie?.() ?? [];
   if (setCookie.length > 0) {
-    // Store raw Set-Cookie values joined — used only server-side on later calls.
     return setCookie.join("; ");
   }
 
@@ -192,10 +197,7 @@ function parseRetryAfter(response: Response): number | undefined {
   return Number.isFinite(seconds) ? seconds : undefined;
 }
 
-function throwMappedUpstream(
-  status: number,
-  body: unknown,
-): never {
+function throwMappedUpstream(status: number, body: unknown): never {
   const root = asRecord(body);
   const errNode = asRecord(root?.error);
   const code = mapUpstreamAuthError({
@@ -230,10 +232,6 @@ export interface KnowledgeOdooAuthClientOptions {
   fetchImpl?: typeof fetch;
 }
 
-/**
- * Server-only Knowledge auth client.
- * Uses interactive user upstream session — never a platform Bearer service token.
- */
 export class KnowledgeOdooAuthClient {
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
@@ -269,7 +267,6 @@ export class KnowledgeOdooAuthClient {
     }
 
     if (input.upstreamSessionMaterial) {
-      // Prefer Cookie forwarding when material looks like Set-Cookie / cookie jar.
       if (
         input.upstreamSessionMaterial.includes("=") ||
         input.upstreamSessionMaterial.toLowerCase().includes("session")
@@ -343,10 +340,7 @@ export class KnowledgeOdooAuthClient {
     const user = parseOdooKnowledgeUser(data);
     validateUserAccess(user);
 
-    const upstreamSessionMaterial = extractUpstreamSessionMaterial(
-      response,
-      body,
-    );
+    const upstreamSessionMaterial = extractUpstreamSessionMaterial(response, body);
     if (!upstreamSessionMaterial) {
       throw new KnowledgeUpstreamError(
         "server_error",
@@ -403,7 +397,6 @@ export class KnowledgeOdooAuthClient {
   }
 }
 
-/** Convert Set-Cookie lines into a Cookie request header value. */
 export function normalizeCookieHeader(material: string): string {
   const parts = material
     .split(/,(?=[^;]+?=)/)
@@ -424,7 +417,6 @@ export function normalizeCookieHeader(material: string): string {
     });
 
   if (parts.length === 0) {
-    // Plain session id
     if (!material.includes("=")) return `session_id=${material}`;
     return material;
   }
