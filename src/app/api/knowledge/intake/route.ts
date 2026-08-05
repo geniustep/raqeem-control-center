@@ -75,18 +75,32 @@ function stringValue(body: Record<string, unknown>, key: string): string {
   return typeof body[key] === "string" ? body[key].trim() : "";
 }
 
-function optionalString(body: Record<string, unknown>, key: string): string | undefined {
+function optionalString(
+  body: Record<string, unknown>,
+  key: string,
+): string | undefined {
   const value = stringValue(body, key);
   return value || undefined;
 }
 
-function createPayload(body: Record<string, unknown>): CreateKnowledgeIntakePayload | null {
+function createPayload(
+  body: Record<string, unknown>,
+): CreateKnowledgeIntakePayload | null {
   for (const key of Object.keys(body)) {
     if (!ALLOWED_CREATE_FIELDS.has(key)) return null;
   }
-  const sourceType = stringValue(body, "source_type") as KnowledgeIntakeSourceType;
-  const actorType = stringValue(body, "actor_type") as KnowledgeIntakeActorType;
-  const riskLevel = stringValue(body, "risk_level") as KnowledgeIntakeRiskLevel;
+  const sourceType = stringValue(
+    body,
+    "source_type",
+  ) as KnowledgeIntakeSourceType;
+  const actorType = stringValue(
+    body,
+    "actor_type",
+  ) as KnowledgeIntakeActorType;
+  const riskLevel = stringValue(
+    body,
+    "risk_level",
+  ) as KnowledgeIntakeRiskLevel;
   const idempotencyKey = stringValue(body, "idempotency_key");
   const title = stringValue(body, "proposed_title");
   const question = stringValue(body, "proposed_question");
@@ -110,7 +124,12 @@ function createPayload(body: Record<string, unknown>): CreateKnowledgeIntakePayl
   }
   if (sourceType === "human_ui" && actorType !== "human") return null;
   if (sourceType === "gpt" && actorType !== "ai") return null;
-  if (sourceType === "gpt" && !optionalString(body, "requested_by_external_actor")) return null;
+  if (
+    sourceType === "gpt" &&
+    !optionalString(body, "requested_by_external_actor")
+  ) {
+    return null;
+  }
   if (sourceType === "import" && actorType !== "importer") return null;
 
   const domainIds = Array.isArray(body.proposed_domain_ids)
@@ -128,7 +147,10 @@ function createPayload(body: Record<string, unknown>): CreateKnowledgeIntakePayl
     source_request_id: optionalString(body, "source_request_id"),
     idempotency_key: idempotencyKey,
     actor_type: actorType,
-    requested_by_external_actor: optionalString(body, "requested_by_external_actor"),
+    requested_by_external_actor: optionalString(
+      body,
+      "requested_by_external_actor",
+    ),
     proposed_title: title,
     proposed_question: question,
     proposed_short_answer: shortAnswer,
@@ -138,10 +160,14 @@ function createPayload(body: Record<string, unknown>): CreateKnowledgeIntakePayl
     proposed_language: language,
     proposed_domain_ids: domainIds,
     proposed_primary_domain_id:
-      Number.isInteger(primaryDomainId) && primaryDomainId > 0 ? primaryDomainId : undefined,
+      Number.isInteger(primaryDomainId) && primaryDomainId > 0
+        ? primaryDomainId
+        : undefined,
     proposed_references: optionalString(body, "proposed_references"),
     proposed_review_interval_days:
-      Number.isInteger(reviewInterval) && reviewInterval > 0 ? reviewInterval : undefined,
+      Number.isInteger(reviewInterval) && reviewInterval > 0
+        ? reviewInterval
+        : undefined,
     proposed_valid_until:
       body.proposed_valid_until === null
         ? null
@@ -149,14 +175,22 @@ function createPayload(body: Record<string, unknown>): CreateKnowledgeIntakePayl
     source_url: optionalString(body, "source_url"),
     source_hash: optionalString(body, "source_hash"),
     source_snapshot_hash: optionalString(body, "source_snapshot_hash"),
-    source_license_or_permission: optionalString(body, "source_license_or_permission"),
+    source_license_or_permission: optionalString(
+      body,
+      "source_license_or_permission",
+    ),
     source_confidentiality: optionalString(body, "source_confidentiality"),
     ai_provider: optionalString(body, "ai_provider"),
     ai_model: optionalString(body, "ai_model"),
     ai_run_id: optionalString(body, "ai_run_id"),
     ai_prompt_fingerprint: optionalString(body, "ai_prompt_fingerprint"),
-    ai_response_fingerprint: optionalString(body, "ai_response_fingerprint"),
-    confidence_score: Number.isFinite(confidenceScore) ? confidenceScore : undefined,
+    ai_response_fingerprint: optionalString(
+      body,
+      "ai_response_fingerprint",
+    ),
+    confidence_score: Number.isFinite(confidenceScore)
+      ? confidenceScore
+      : undefined,
     hallucination_risk: optionalString(body, "hallucination_risk"),
     generated_at: optionalString(body, "generated_at"),
     risk_level: riskLevel,
@@ -180,7 +214,16 @@ export async function GET(request: NextRequest) {
       requestId: auth.requestId,
       query: parsed.query,
     });
-    return intakeJsonOk(page.intakes, auth.requestId, { meta: page.meta });
+    return intakeJsonOk(page.intakes, auth.requestId, {
+      meta: {
+        page: page.meta.page,
+        page_size: page.meta.page_size,
+        total: page.meta.total,
+        total_pages: page.meta.total_pages,
+        has_next: page.meta.has_next,
+        has_previous: page.meta.has_previous,
+      },
+    });
   } catch (error) {
     return intakeErrorResponse(error, auth.requestId);
   }
@@ -192,7 +235,9 @@ export async function POST(request: NextRequest) {
   const body = await readJsonObject(request);
   const payload = body ? createPayload(body) : null;
   if (!payload) {
-    return intakeJsonError("validation_failed", auth.requestId, { status: 400 });
+    return intakeJsonError("validation_failed", auth.requestId, {
+      status: 400,
+    });
   }
   try {
     const client = new KnowledgeOdooIntakeClient();
