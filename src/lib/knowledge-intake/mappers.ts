@@ -187,7 +187,13 @@ export function mapIntakePaginationMeta(value: unknown): KnowledgeIntakePaginati
 
 export function mapIntakeOptions(value: unknown): KnowledgeIntakeOption[] {
   const data = unwrapIntakeData(value);
-  const values = Array.isArray(data) ? data : [];
+  const dataNode = record(data);
+  const values = Array.isArray(data)
+    ? data
+    : Array.isArray(dataNode?.options)
+      ? dataNode.options
+      : [];
+
   return values
     .map((entry) => {
       const node = record(entry);
