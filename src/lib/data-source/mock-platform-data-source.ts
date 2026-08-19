@@ -9,6 +9,7 @@ import {
   getInfrastructureServerByCode,
   infrastructureServers,
 } from "@/data/infrastructure";
+import { disabledMockEntitlement } from "@/lib/entitlements/contract";
 import { listOperations } from "@/lib/operation-catalog";
 import { getAllDomains, getAllOperationRuns, getAuditLog } from "@/lib/selectors";
 import { getPlatformSummary } from "@/lib/tenant-status";
@@ -22,6 +23,10 @@ export class MockPlatformDataSource implements PlatformDataSource {
 
   async getTenant(code: string) {
     return getTenantByCode(code) ?? null;
+  }
+
+  async getEntitlement(tenantCode: string, serviceKey: string) {
+    return disabledMockEntitlement(tenantCode, serviceKey);
   }
 
   async listDomains() {

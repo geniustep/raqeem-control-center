@@ -11,10 +11,17 @@ import { TenantOdooPanel } from "@/components/TenantOdooPanel";
 import { TenantDomainsPanel } from "@/components/TenantDomainsPanel";
 import { TenantHealthChecksPanel } from "@/components/TenantHealthChecksPanel";
 import { TenantOperationsPanel } from "@/components/TenantOperationsPanel";
+import { TenantBusinessServicesPanel } from "@/components/TenantBusinessServicesPanel";
 import { AuditTimeline } from "@/components/AuditTimeline";
 import { DataSourceBanner } from "@/components/DataSourceBanner";
 import { DataSourceErrorState } from "@/components/DataSourceErrorState";
-import { loadTenant, loadInfrastructure, getStaticTenantCodes } from "@/lib/data-source/platform-data-source";
+import {
+  loadEntitlement,
+  loadTenant,
+  loadInfrastructure,
+  getStaticTenantCodes,
+} from "@/lib/data-source/platform-data-source";
+import { WHATSAPP_SERVICE_KEY } from "@/lib/entitlements/whatsapp";
 import { getAuditLog } from "@/lib/selectors";
 import {
   deriveTenantOverallStatus,
@@ -36,10 +43,12 @@ export default async function TenantDetailPage({
   params: Promise<{ code: string }>;
 }) {
   const { code } = await params;
-  const [{ data: tenant, meta, error }, infraResult] = await Promise.all([
-    loadTenant(code),
-    loadInfrastructure(),
-  ]);
+  const [{ data: tenant, meta, error }, infraResult, entitlementResult] =
+    await Promise.all([
+      loadTenant(code),
+      loadInfrastructure(),
+      loadEntitlement(code, WHATSAPP_SERVICE_KEY),
+    ]);
   const infrastructureServers = infraResult.data ?? [];
 
   if (error) {
@@ -132,6 +141,15 @@ export default async function TenantDetailPage({
         </div>
 
         <div className="space-y-6 lg:col-span-2">
+          <TenantBusinessServicesPanel
+            tenantCode={tenant.code}
+            entitlement={entitlementResult.data}
+            unavailable={Boolean(entitlementResult.error)}
+            allowMutation={
+              entitlementResult.meta.effectiveSource === "odoo" &&
+              !entitlementResult.meta.usedFallback
+            }
+          />
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
             <TenantInfrastructurePanel tenant={tenant} servers={infrastructureServers} />
             <TenantDatabasePanel tenant={tenant} />

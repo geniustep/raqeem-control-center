@@ -101,6 +101,10 @@ export async function loadTenant(code: string) {
   return withFallback((source) => source.getTenant(code));
 }
 
+export async function loadEntitlement(tenantCode: string, serviceKey: string) {
+  return withFallback((source) => source.getEntitlement(tenantCode, serviceKey));
+}
+
 export async function loadDomains() {
   return withFallback((source) => source.listDomains());
 }

@@ -15,6 +15,7 @@ import {
   mapOdooTenant,
   mapOdooTenantsResponse,
 } from "@/lib/data-source/mappers";
+import { mapPlatformEntitlement } from "@/lib/entitlements/contract";
 import type { PlatformDataSource } from "@/lib/data-source/types";
 import { listOperations } from "@/lib/operation-catalog";
 import { getAllDomains, getAllOperationRuns, getAuditLog } from "@/lib/selectors";
@@ -100,6 +101,17 @@ export class OdooPlatformDataSource implements PlatformDataSource {
       }
       throw error;
     }
+  }
+
+  async getEntitlement(tenantCode: string, serviceKey: string) {
+    const query = new URLSearchParams({
+      tenant_code: tenantCode,
+      service_key: serviceKey,
+    });
+    const body = await this.getJson(
+      `/api/v1/platform/entitlements?${query.toString()}`,
+    );
+    return mapPlatformEntitlement(body);
   }
 
   async listDomains() {

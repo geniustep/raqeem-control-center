@@ -43,9 +43,26 @@ export type DataSourceResult<T> =
   | DataSourceResultSuccess<T>
   | DataSourceResultFailure;
 
+export interface PlatformEntitlement {
+  tenantId: string;
+  serviceKey: string | null;
+  enabled: boolean;
+  effective: boolean;
+  subscriptionStatus: string | null;
+  planKey: string | null;
+  quota: number | null;
+  quotaUnlimited: boolean | null;
+  effectiveFrom: string | null;
+  effectiveUntil: string | null;
+  graceUntil: string | null;
+  revision: string | null;
+  reasonCode: string;
+}
+
 export interface PlatformDataSource {
   listTenants(): Promise<Tenant[]>;
   getTenant(code: string): Promise<Tenant | null>;
+  getEntitlement(tenantCode: string, serviceKey: string): Promise<PlatformEntitlement>;
   listDomains(): Promise<TenantDomain[]>;
   listOperations(): Promise<TenantOperation[]>;
   listOperationRuns(): Promise<TenantOperationRun[]>;
