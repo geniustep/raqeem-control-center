@@ -28,7 +28,7 @@ function formatTimestamp(value: string | null): string {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("ar-MA", {
+  return new Intl.DateTimeFormat("en-GB", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -92,7 +92,10 @@ function TimingLines({
         value ? (
           <div key={label} className="flex items-center justify-between gap-3">
             <span className="text-slate-400">{label}</span>
-            <span dir="ltr" className="font-mono text-[10px] text-slate-700">
+            <span
+              dir="ltr"
+              className="inline-block min-w-[142px] whitespace-nowrap text-left font-mono text-[10px] tabular-nums text-slate-700 [unicode-bidi:isolate]"
+            >
               {formatTimestamp(value)}
             </span>
           </div>
@@ -136,8 +139,14 @@ export function TenantMessagingOperationsPanel({
                     إجمالي الرسائل المسجلة: {snapshot.total}
                   </div>
                 </div>
-                <div className="text-[11px] text-slate-400">
-                  آخر قراءة: {formatTimestamp(snapshot.generatedAt)}
+                <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                  <span>آخر قراءة:</span>
+                  <span
+                    dir="ltr"
+                    className="inline-block whitespace-nowrap font-mono tabular-nums text-slate-500 [unicode-bidi:isolate]"
+                  >
+                    {formatTimestamp(snapshot.generatedAt)}
+                  </span>
                 </div>
               </div>
 
