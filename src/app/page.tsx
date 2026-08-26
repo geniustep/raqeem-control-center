@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { DataSourceBanner } from "@/components/DataSourceBanner";
 import { DataSourceErrorState } from "@/components/DataSourceErrorState";
 import { WarningCallout } from "@/components/WarningCallout";
+import { ReleaseReadinessSummary } from "@/components/ReleaseReadinessSummary";
 import { loadDashboardData } from "@/lib/data-source/platform-data-source";
 import { formatOptionalDateTime } from "@/lib/format";
 import { t } from "@/lib/i18n";
@@ -24,7 +25,7 @@ export default async function DashboardPage() {
   }
 
   const { data, meta } = result;
-  const { summary, needsAttention, recentRuns: recent } = data;
+  const { summary, releaseDashboard, needsAttention, recentRuns: recent } = data;
   const M = t.dashboard.metrics;
 
   return (
@@ -81,6 +82,8 @@ export default async function DashboardPage() {
           tone="green"
         />
       </section>
+
+      <ReleaseReadinessSummary data={releaseDashboard} />
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-5">
         <section className="lg:col-span-3">
