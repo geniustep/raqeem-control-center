@@ -16,6 +16,7 @@ import type {
   DataSourceResult,
   PlatformDataSource,
 } from "@/lib/data-source/types";
+import { buildReleaseDashboardFromTenants } from "@/lib/release-snapshot/contract";
 
 const FALLBACK_WARNING =
   "تعذّر الاتصال بمصدر بيانات Odoo — يتم عرض آخر بيانات متاحة (mock fallback)";
@@ -137,19 +138,24 @@ export async function loadDashboardData() {
 
     let tenants;
     let summary;
+    let releaseDashboard;
 
     if (source.fetchTenantsWithDashboard) {
       const result = await source.fetchTenantsWithDashboard();
       tenants = result.tenants;
       summary = result.dashboard ?? getPlatformSummary(tenants);
+      releaseDashboard =
+        result.releaseDashboard ?? buildReleaseDashboardFromTenants(tenants);
     } else {
       tenants = await source.listTenants();
       summary = getPlatformSummary(tenants);
+      releaseDashboard = buildReleaseDashboardFromTenants(tenants);
     }
 
     return {
       tenants,
       summary,
+      releaseDashboard,
       needsAttention: getTenantsNeedingAttention(tenants),
       recentRuns: getRecentOperationRuns(6, tenants),
     };

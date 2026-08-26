@@ -1,7 +1,9 @@
 import Link from "next/link";
 import type { CheckStatus, Tenant } from "@/types";
 import { deriveTenantOverallStatus, getTenantWarnings } from "@/lib/tenant-status";
+import { getTenantReleaseSnapshot } from "@/lib/release-snapshot/contract";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ReleaseReadinessBadge } from "@/components/ReleaseReadinessBadge";
 import { HealthBadge } from "@/components/HealthBadge";
 import { Pill } from "@/components/Pill";
 import { t } from "@/lib/i18n";
@@ -35,13 +37,13 @@ const TD = "px-3 py-3 text-sm text-slate-700 whitespace-nowrap";
 export function TenantTable({ tenants }: { tenants: Tenant[] }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-      <table className="w-full min-w-[1100px] border-collapse text-right">
+      <table className="w-full min-w-[1320px] border-collapse text-right">
         <thead className="border-b border-slate-200 bg-slate-50">
           <tr>
             <th className={TH}>{t.common.schoolName}</th>
             <th className={TH}>{t.common.code}</th>
-            <th className={TH}>{t.common.frontendDomain}</th>
-            <th className={TH}>{t.common.apiDomain}</th>
+            <th className={TH}>الإصدار المستهدف</th>
+            <th className={TH}>جاهزية الإصدار</th>
             <th className={TH}>{t.common.overallStatus}</th>
             <th className={TH}>{t.common.backend}</th>
             <th className={TH}>{t.common.frontend}</th>
@@ -56,15 +58,16 @@ export function TenantTable({ tenants }: { tenants: Tenant[] }) {
         <tbody className="divide-y divide-slate-100">
           {tenants.map((tn) => {
             const warnings = getTenantWarnings(tn);
+            const { targetRelease, releaseReadiness } = getTenantReleaseSnapshot(tn);
             return (
               <tr key={tn.code} className="hover:bg-slate-50/60">
                 <td className={`${TD} font-medium text-slate-900`}>{tn.name}</td>
                 <td className={`${TD} font-mono text-xs`} dir="ltr">{tn.code}</td>
-                <td className={`${TD} font-mono text-xs text-slate-500`} dir="ltr">
-                  {tn.frontendDomain}
+                <td className={`${TD} font-mono text-xs`} dir="ltr">
+                  {targetRelease?.code ?? "—"}
                 </td>
-                <td className={`${TD} font-mono text-xs text-slate-500`} dir="ltr">
-                  {tn.apiDomain}
+                <td className={TD}>
+                  <ReleaseReadinessBadge status={releaseReadiness.status} />
                 </td>
                 <td className={TD}>
                   <StatusBadge status={deriveTenantOverallStatus(tn)} />

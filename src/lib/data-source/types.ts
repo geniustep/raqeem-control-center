@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { ControlCenterDataSource } from "@/lib/data-source/config";
+import type { ReleaseDashboard } from "@/lib/release-snapshot/types";
 import type {
   AuditLogEntry,
   InfrastructureServer,
@@ -73,5 +74,6 @@ export interface PlatformDataSource {
   fetchTenantsWithDashboard?(): Promise<{
     tenants: Tenant[];
     dashboard: PlatformSummary | null;
+    releaseDashboard: ReleaseDashboard | null;
   }>;
 }

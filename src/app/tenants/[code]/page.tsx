@@ -13,6 +13,8 @@ import { TenantHealthChecksPanel } from "@/components/TenantHealthChecksPanel";
 import { TenantOperationsPanel } from "@/components/TenantOperationsPanel";
 import { TenantBusinessServicesPanel } from "@/components/TenantBusinessServicesPanel";
 import { TenantMessagingOperationsPanel } from "@/components/TenantMessagingOperationsPanel";
+import { TenantReleaseReadinessPanel } from "@/components/TenantReleaseReadinessPanel";
+import { TenantSchoolSnapshotPanel } from "@/components/TenantSchoolSnapshotPanel";
 import { AuditTimeline } from "@/components/AuditTimeline";
 import { DataSourceBanner } from "@/components/DataSourceBanner";
 import { DataSourceErrorState } from "@/components/DataSourceErrorState";
@@ -24,6 +26,8 @@ import {
 } from "@/lib/data-source/platform-data-source";
 import { WHATSAPP_SERVICE_KEY } from "@/lib/entitlements/whatsapp";
 import { loadTenantMessagingOperations } from "@/lib/messaging/operations";
+import { getTenantReleaseSnapshot } from "@/lib/release-snapshot/contract";
+import { getSnapshotRefreshConfig } from "@/lib/release-snapshot/refresh";
 import { getAuditLog } from "@/lib/selectors";
 import {
   deriveTenantOverallStatus,
@@ -79,6 +83,13 @@ export default async function TenantDetailPage({
   const warnings = getTenantWarnings(tenant);
   const progress = getLifecycleProgress(tenant);
   const audit = getAuditLog([tenant]);
+  const { targetRelease, releaseReadiness, schoolSnapshot } =
+    getTenantReleaseSnapshot(tenant);
+  const snapshotRefreshConfig = getSnapshotRefreshConfig();
+  const allowSnapshotRefresh =
+    meta.effectiveSource === "odoo" &&
+    !meta.usedFallback &&
+    snapshotRefreshConfig.isConfigured;
 
   const linkBtn =
     "rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-brand-300 hover:bg-brand-50";
@@ -148,6 +159,15 @@ export default async function TenantDetailPage({
         </div>
 
         <div className="space-y-6 lg:col-span-2">
+          <TenantReleaseReadinessPanel
+            targetRelease={targetRelease}
+            readiness={releaseReadiness}
+          />
+          <TenantSchoolSnapshotPanel
+            snapshot={schoolSnapshot}
+            tenantCode={tenant.code}
+            allowRefresh={allowSnapshotRefresh}
+          />
           <TenantBusinessServicesPanel
             tenantCode={tenant.code}
             entitlement={entitlementResult.data}

@@ -17,6 +17,11 @@ import {
 } from "@/lib/data-source/mappers";
 import { mapPlatformEntitlement } from "@/lib/entitlements/contract";
 import type { PlatformDataSource } from "@/lib/data-source/types";
+import {
+  augmentTenantReleaseSnapshot,
+  augmentTenantsReleaseSnapshot,
+  mapReleaseDashboard,
+} from "@/lib/release-snapshot/contract";
 import { listOperations } from "@/lib/operation-catalog";
 import { getAllDomains, getAllOperationRuns, getAuditLog } from "@/lib/selectors";
 import { getPlatformSummary } from "@/lib/tenant-status";
@@ -76,7 +81,12 @@ export class OdooPlatformDataSource implements PlatformDataSource {
 
   async fetchTenantsWithDashboard() {
     const body = await this.getJson("/api/v1/platform/tenants");
-    return mapOdooTenantsResponse(body);
+    const { tenants, dashboard } = mapOdooTenantsResponse(body);
+    return {
+      tenants: augmentTenantsReleaseSnapshot(body, tenants),
+      dashboard,
+      releaseDashboard: mapReleaseDashboard(body),
+    };
   }
 
   async listTenants() {
@@ -92,9 +102,11 @@ export class OdooPlatformDataSource implements PlatformDataSource {
       if (body && typeof body === "object" && !Array.isArray(body)) {
         const record = body as Record<string, unknown>;
         const nested = record.data ?? record.tenant;
-        if (nested) return mapOdooTenant(nested);
+        if (nested) {
+          return augmentTenantReleaseSnapshot(mapOdooTenant(nested), nested);
+        }
       }
-      return mapOdooTenant(body);
+      return augmentTenantReleaseSnapshot(mapOdooTenant(body), body);
     } catch (error) {
       if (error instanceof OdooApiError && error.status === 404) {
         return null;
