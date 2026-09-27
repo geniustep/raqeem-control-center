@@ -49,6 +49,7 @@ const ar = {
     tenants: "المدارس (Tenants)",
     domains: "النطاقات",
     infrastructure: "البنية التحتية",
+    regulatory: "المركز التنظيمي",
     operations: "العمليات",
     audit: "سجل التدقيق",
     settings: "الإعدادات",
@@ -228,6 +229,27 @@ const ar = {
         readonly_probe: "فحص للقراءة فقط",
       },
     },
+  },
+  regulatory: {
+    title: "المركز التنظيمي",
+    subtitle: "المرجع التنظيمي المركزي الذي توزّعه منصة رقيم على المدارس",
+    readOnlyNotice:
+      "عرض للقراءة فقط. لا يمكن إنشاء أو نشر أو تعديل المراجع التنظيمية من هذه الصفحة في هذه المرحلة.",
+    unavailable: "تعذر تحميل المرجع التنظيمي",
+    unavailableHint:
+      "لم يتمكن مركز التحكّم من قراءة Manifest من Regulatory Center. لا تُعرض بيانات بديلة.",
+    currentPublication: "المرجع الرسمي الحالي",
+    academicYear: "السنة الدراسية",
+    items: "العناصر التنظيمية",
+    sources: "المصادر",
+    releaseDetails: "تفاصيل الإصدار",
+    country: "الدولة",
+    publishedAt: "تاريخ النشر",
+    bundleId: "Bundle ID",
+    contentHash: "Content Hash",
+    deliveryStatus: "حالة التوزيع على المدارس",
+    deliveryStatusHint:
+      "هذه النسخة الأولى تعرض المرجع المركزي فقط. حالات Pull وACK لكل مدرسة تحتاج عقد قراءة مخصصًا من Control Plane قبل عرضها هنا.",
   },
   operations: {
     title: "العمليات",
